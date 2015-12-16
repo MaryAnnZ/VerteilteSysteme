@@ -1,0 +1,15 @@
+*	Chatserver	chatserver
+*	Client		alice.vienna.at
+*	Client		bill.de
+
+alice.vienna.at:	!login alice.vienna.at 12345
+bill.de:			!login bill.de 23456
+
+
+alice.vienna.at:	!lastMsg
+alice.vienna.at:	!send this is a public message
+
+
+chatserver: 		!exit
+alice.vienna.at:	!exit
+bill.de:			!exit

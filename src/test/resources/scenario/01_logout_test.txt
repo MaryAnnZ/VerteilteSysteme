@@ -1,0 +1,17 @@
+*	Chatserver	chatserver
+*	Client		alice.vienna.at
+
+alice.vienna.at:	!logout
+>					verify("must be logged in")
+
+alice.vienna.at:	!login alice.vienna.at 12345
+>					verify("success")
+
+alice.vienna.at:	!logout
+>					verify("success")
+
+alice.vienna.at:	!logout
+>					verify("must be logged in")
+
+chatserver: 		!exit
+alice.vienna.at:	!exit
