@@ -41,7 +41,7 @@ public class PrivateMessageListener extends Thread {
 					// print request
 					writer.println("!ack");
 					
-					client.receivePrivateMessage(message);
+					client.writePrivateMessage(message);
 					break;
 
 			} catch (IOException e) {

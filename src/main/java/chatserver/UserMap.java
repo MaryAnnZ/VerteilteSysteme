@@ -55,7 +55,11 @@ public class UserMap extends ConcurrentHashMap<String, User> {
 	}
 	
 	/**
-	 * register Port of User; username != null, ipPort != null
+	 * register Port of user
+	 * username != null, ipPort != null
+	 * 
+	 * @param username user, who wants to register port
+	 * @param ipPort port of user
 	 */
 	public synchronized String registerPort(String username, String ipPort) {
 		User user = get(username);
@@ -73,6 +77,9 @@ public class UserMap extends ConcurrentHashMap<String, User> {
 	
 	/**
 	 * lookup user port
+	 * username != null
+	 * 
+	 * @param username
 	 */
 	public synchronized String lookUpPort(String username) {
 		User user = get(username);
@@ -87,7 +94,7 @@ public class UserMap extends ConcurrentHashMap<String, User> {
 		}
 	}
 	
-	public String listUsers() {
+	public synchronized String listUsers() {
 		String output = "";
 		List<String> userNames = getSortedUserNames();		
 		
@@ -102,7 +109,7 @@ public class UserMap extends ConcurrentHashMap<String, User> {
 		return output;		
 	}
 	
-	public String listOnlineUsers() {
+	public synchronized String listOnlineUsers() {
 		String output = "Online users: \n";
 		List<String> userNames = getSortedUserNames();		
 		

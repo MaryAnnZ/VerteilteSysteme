@@ -37,6 +37,7 @@ public class Client implements IClientCli, Runnable {
 	private Socket privateSocket;
 	
 	private Shell shell;
+	private ServerResponseListener responseListener;
 	
 	private String user = null;
 	private String lastMessage = null;
@@ -57,9 +58,6 @@ public class Client implements IClientCli, Runnable {
 		this.config = config;
 		this.userRequestStream = userRequestStream;
 		this.userResponseStream = userResponseStream;
-
-		// TODO
-		
 		
 		try {
 			socket = new Socket(config.getString("chatserver.host"), config.getInt("chatserver.tcp.port"));
@@ -78,28 +76,16 @@ public class Client implements IClientCli, Runnable {
 		// shell
 		shell = new Shell(componentName, userRequestStream, userResponseStream);
 		shell.register(this);
+		
+		// server response listener
+		responseListener = new ServerResponseListener(this, serverResponse);
+		
 	}
 
 	@Override
 	public void run() {
 		threadPool.execute(new Thread(shell));
-		
-		/*while(true) {
-			try {
-				if(serverResponse.ready()) {
-					//clientRequest.println(serverResponse.readLine());
-					String response = serverResponse.readLine();
-					//System.out.println(response);
-					shell.writeLine(response);
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				//e.printStackTrace();
-				System.out.println("error");
-				break;
-			}
-		}*/
-		
+		threadPool.execute(new Thread(responseListener));
 	}
 
 	@Override
@@ -107,28 +93,15 @@ public class Client implements IClientCli, Runnable {
 	public String login(String username, String password) throws IOException {		
 		
 		clientRequest.println("login_" + username + "_" + password);
-		
-		String response = serverResponse.readLine();
-		if (response.startsWith("Success")) {
-			user = username;
-		}
-		return response;
+		return getServerResponse("login");	
 	}
 
 	@Override
 	@Command
 	public String logout() throws IOException {
 		
-		if(user == null)
-			return "User must be logged in.";
-		
-		clientRequest.println("logout_" + user);
-			
-		String response = serverResponse.readLine();
-		if (response.startsWith("Success")) {
-			user = null;
-		}
-		return response;	
+		clientRequest.println("logout_");
+		return getServerResponse("logout");
 	}
 
 	@Override
@@ -136,8 +109,7 @@ public class Client implements IClientCli, Runnable {
 	public String send(String message) throws IOException {
 			
 		clientRequest.println("send_" + message);
-		//return serverResponse.readLine();
-		return "";
+		return getServerResponse("send");
 	}
 
 	@Override
@@ -167,14 +139,18 @@ public class Client implements IClientCli, Runnable {
 	@Command
 	public String msg(String username, String message) throws IOException {
 		
-		String receiver = lookup(username);  //todo
-		String[] parts = receiver.split(":");
+		String lookup = lookup(username);		
+		String[] parts = lookup.split(":");
+
+		try{  Integer.parseInt(parts[1]); }
+		catch(NumberFormatException e) {
+			return lookup;
+		}
 		
 		privateSocket = new Socket(config.getString("chatserver.host"), Integer.parseInt(parts[1]));
 		
 		BufferedReader reader = new BufferedReader(new InputStreamReader(privateSocket.getInputStream()));
 		PrintWriter writer = new PrintWriter(privateSocket.getOutputStream(), true);
-		
 		
 		writer.println(message);
 				
@@ -184,31 +160,26 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	@Command
 	public String lookup(String username) throws IOException {
-
+		
 		clientRequest.println("lookup_" + username);
-		return serverResponse.readLine();
+		return getServerResponse("lookup");
 	}
 
 	@Override
 	@Command
 	public String register(String privateAddress) throws IOException {
 
-		clientRequest.println("register_" + user + "_" + privateAddress);
+		clientRequest.println("register_" + privateAddress);
+		
+		String response = getServerResponse("register");
+		if(response.startsWith("Success")) {
+			String[] parts = privateAddress.split(":");
 			
-		String[] parts = privateAddress.split(":");
+			serverSocket = new ServerSocket(Integer.parseInt(parts[1]));
+			threadPool.execute(new PrivateMessageListener(this, serverSocket));
+		}
 			
-		serverSocket = new ServerSocket(Integer.parseInt(parts[1]));
-		threadPool.execute(new PrivateMessageListener(this, serverSocket));
-			
-		return serverResponse.readLine();	
-	}
-	
-	/**
-	 * prints private message from other client and closes private socket
-	 */
-	public void receivePrivateMessage(String message) throws IOException {
-		shell.writeLine(message);
-		serverSocket.close();
+		return response;
 	}
 	
 	@Override
@@ -223,18 +194,35 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	@Command
 	public String exit() throws IOException {
-		// TODO Auto-generated method stub
 		logout();
 		socket.close();
-		//System.out.println(socket);
 		threadPool.shutdown();
-		//shell.close();
 		clientRequest.close();
 		serverResponse.close();
 		userRequestStream.close();
 		userResponseStream.close();
 		return "shutdown client";
 	}
+	
+	/**
+	 * prints private message from other client and closes private socket
+	 */
+	public void writePrivateMessage(String message) throws IOException {
+		shell.writeLine(message);
+		serverSocket.close();
+	}
+	
+	public void writePublicMessage(String message) throws IOException {
+		lastMessage = message;
+		shell.writeLine(message);
+	}
+	
+	private String getServerResponse(String command) {
+        try { Thread.sleep(100); } 
+        catch (InterruptedException ex) { }
+
+		return responseListener.getResponse(command);
+    }
 	
 	/**
 	 * @param args
