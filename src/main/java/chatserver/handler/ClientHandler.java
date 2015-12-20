@@ -121,8 +121,15 @@ public class ClientHandler implements Runnable {
 				writer.println(response);
 			}
 		} catch(IOException e) {
-			connections.remove(id);
-		}	
+			
+		} finally {
+			try {
+                if (!this.socket.isClosed()) {
+                    this.socket.close();
+                    connections.remove(id);
+                }
+            } catch (IOException ex) { }
+        }
 		
 	}
 	

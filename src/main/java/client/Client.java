@@ -39,7 +39,6 @@ public class Client implements IClientCli, Runnable {
 	private Shell shell;
 	private ServerResponseListener responseListener;
 	
-	private String user = null;
 	private String lastMessage = null;
 
 	/**

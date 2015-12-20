@@ -94,7 +94,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 		
 		// start threads
 		threadPool.execute(new TcpListener(serverSocket, users, threadPool));
-		threadPool.execute(new UdpListener(datagramSocket, users));
+		threadPool.execute(new UdpListener(datagramSocket, users, threadPool));
 		
 		threadPool.execute(new Thread(shell));
 	}

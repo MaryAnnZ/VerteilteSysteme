@@ -26,8 +26,6 @@ public class TcpListener extends Thread {
 	private int id;
 	private static ConcurrentHashMap<Integer, ClientHandler> connections;
 	
-	private static PrintWriter writer;
-	
 	private boolean stopped = false;
 
 	public TcpListener(ServerSocket serverSocket, UserMap users, ExecutorService threadPool) {
@@ -57,8 +55,8 @@ public class TcpListener extends Thread {
 
 		if (stopped) {
 			try {
-				connections.clear();
 				serverSocket.close();
+				connections.clear();
 			} catch (IOException e) {
 				// Ignored because we cannot handle it
 			}

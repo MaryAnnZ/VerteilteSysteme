@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.concurrent.ExecutorService;
 
 import chatserver.UserMap;
+import chatserver.handler.UdpConnection;
 
 /**
  * Thread to listen for incoming data packets on the given socket.
@@ -14,10 +16,12 @@ public class UdpListener extends Thread {
 
 	private DatagramSocket datagramSocket;
 	private UserMap users;
+	private final ExecutorService threadPool;
 
-	public UdpListener(DatagramSocket datagramSocket, UserMap users) {
+	public UdpListener(DatagramSocket datagramSocket, UserMap users, ExecutorService threadPool) {
 		this.datagramSocket = datagramSocket;
 		this.users = users;
+		this.threadPool = threadPool;
 	}
 	
 	@Override
@@ -33,27 +37,12 @@ public class UdpListener extends Thread {
 
 				// wait for incoming packets from client
 				datagramSocket.receive(packet);
-				// get the data from the packet
-				String request = new String(packet.getData());
-
-				String response = "!error provided message does not fit the expected format: !list";
-
-				if (request.startsWith("!list")) {
-					response = users.listOnlineUsers();
-				}
 				
-				// get the address of the sender (client) from the received
-				// packet
-				InetAddress address = packet.getAddress();
+				// new UdpConnection
+				UdpConnection connection = new UdpConnection(packet, users);
 				
-				// get the port of the sender from the received packet
-				int port = packet.getPort();
-				buffer = response.getBytes();
+				threadPool.execute(connection);
 				
-				packet = new DatagramPacket(buffer, buffer.length, address, port);
-				
-				// finally send the packet
-				datagramSocket.send(packet);
 			}
 
 		} catch (IOException e) {
@@ -62,6 +51,7 @@ public class UdpListener extends Thread {
 		} finally {
 			if (datagramSocket != null && !datagramSocket.isClosed())
 				datagramSocket.close();
+			threadPool.shutdown();
 		}
 
 	}
