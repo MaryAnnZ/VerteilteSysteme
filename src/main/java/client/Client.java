@@ -1,6 +1,7 @@
 package client;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -11,13 +12,26 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
+import org.bouncycastle.util.encoders.Base64;
+
+import channel.RSAreader;
+import channel.RSAwriter;
 import chatserver.listener.TcpListener;
 import cli.Command;
 import cli.Shell;
 import util.Config;
+import util.Keys;
 
 public class Client implements IClientCli, Runnable {
 
@@ -31,15 +45,22 @@ public class Client implements IClientCli, Runnable {
 	private Socket socket;
 	private BufferedReader serverResponse;
 	private PrintWriter clientRequest;
+	private RSAwriter RSAwriter;
+	private RSAreader RSAreader;
 	private DatagramPacket packet;
 	
 	private ServerSocket serverSocket;
 	private Socket privateSocket;
 	
 	private Shell shell;
-	private ServerResponseListener responseListener;
+	private ServerResponseListenerAES aesListener;
+	private ServerResponseListenerRSA rsaListener;
 	
 	private String lastMessage = null;
+	
+	private SecureRandom srand;
+	private Cipher cipherRSApublic;
+	private Cipher cipherRSAprivate;
 
 	/**
 	 * @param componentName
@@ -62,11 +83,26 @@ public class Client implements IClientCli, Runnable {
 			socket = new Socket(config.getString("chatserver.host"), config.getInt("chatserver.tcp.port"));
 			datagramSocket = new DatagramSocket();
 			
-			serverResponse = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			clientRequest = new PrintWriter(socket.getOutputStream(), true);
+			cipherRSApublic = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
+			cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPrivatePEM(new File(config.getString("chatserver.key"))));
+			cipherRSAprivate = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
+			cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(config.getString("keys.dir"))));
 			
+			serverResponse = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			clientRequest = new  PrintWriter(socket.getOutputStream(), true);
+			RSAwriter = new RSAwriter(new PrintWriter(socket.getOutputStream(), true), cipherRSApublic) ;
+			RSAreader = new RSAreader( new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherRSAprivate);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchPaddingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		// thread pool creates new threads as needed and reuse previous threads
@@ -77,14 +113,15 @@ public class Client implements IClientCli, Runnable {
 		shell.register(this);
 		
 		// server response listener
-		responseListener = new ServerResponseListener(this, serverResponse);
+		aesListener = new ServerResponseListenerAES(this, serverResponse);
+		rsaListener = new ServerResponseListenerRSA(this, RSAreader);
 		
 	}
 
 	@Override
 	public void run() {
 		threadPool.execute(new Thread(shell));
-		threadPool.execute(new Thread(responseListener));
+		threadPool.execute(new Thread(aesListener));
 	}
 
 	@Override
@@ -198,6 +235,7 @@ public class Client implements IClientCli, Runnable {
 		threadPool.shutdown();
 		clientRequest.close();
 		serverResponse.close();
+		RSAwriter.close();
 		userRequestStream.close();
 		userResponseStream.close();
 		return "shutdown client";
@@ -219,9 +257,23 @@ public class Client implements IClientCli, Runnable {
 	private String getServerResponse(String command) {
         try { Thread.sleep(100); } 
         catch (InterruptedException ex) { }
-
-		return responseListener.getResponse(command);
+        
+		return aesListener.getResponse(command);
     }
+	
+	private String handleServerResponseAut() {
+		try { Thread.sleep(100); } 
+        catch (InterruptedException ex) { }
+		String serverResponse = rsaListener.getResponse("authenticate");
+		// check challenge
+		String[] splitted = serverResponse.split(" ");
+		if (!splitted[1].equals(srand)) {
+			//TODO error msg
+			return null;
+		}
+		// TODO implement AES communication
+		return null;
+	}
 	
 	/**
 	 * @param args
@@ -239,8 +291,19 @@ public class Client implements IClientCli, Runnable {
 
 	@Override
 	public String authenticate(String username) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		//generate challenge
+
+		srand = new SecureRandom();
+		final byte[] challenge = new byte[32];
+		srand.nextBytes(challenge);
+		
+		try {
+			RSAwriter.println("authenticate " + username + " " + challenge);
+		} catch (IllegalBlockSizeException | BadPaddingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return handleServerResponseAut();
 	}
 
 }

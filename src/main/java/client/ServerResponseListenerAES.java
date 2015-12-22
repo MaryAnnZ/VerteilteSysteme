@@ -4,13 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ServerResponseListener extends Thread{
+public class ServerResponseListenerAES extends Thread{
 
 	private Client client;
 	private BufferedReader responseReader;
 	private ConcurrentHashMap<String, String> responseMap;
 	
-	public ServerResponseListener(Client client, BufferedReader responseReader) {
+	public ServerResponseListenerAES(Client client, BufferedReader responseReader) {
 		this.client = client;
 		this.responseReader = responseReader;
 		responseMap = new ConcurrentHashMap<String, String>();
@@ -44,7 +44,7 @@ public class ServerResponseListener extends Thread{
 	
 						case "lookup":
 							responseMap.put("lookup", response.substring(parts[0].length() + 1)); break;	
-							
+						
 						default: break;
 						}
 					
