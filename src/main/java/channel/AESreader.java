@@ -9,14 +9,14 @@ import javax.crypto.IllegalBlockSizeException;
 
 import org.bouncycastle.util.encoders.Base64;
 
-public class RSAreader {
+public class AESreader {
 	
 	private BufferedReader bufferedReader;
-	private Cipher cipherRSA;
+	private Cipher cipherAES;
 	
-	public RSAreader(BufferedReader bufferedReader, Cipher cipherRSA) {
+	public AESreader(BufferedReader bufferedReader, Cipher cipherAES) {
 		this.bufferedReader = bufferedReader;
-		this.cipherRSA = cipherRSA;
+		this.cipherAES = cipherAES;
 	}
 	
 	public boolean ready() throws IOException {
@@ -26,19 +26,20 @@ public class RSAreader {
 	public String readLine() throws IOException, IllegalBlockSizeException, BadPaddingException {
 		String response = "";
 		String msg = bufferedReader.readLine();
-		byte[] decB64msg = Base64.decode(msg.getBytes());
-		byte[] decRSAmsg = cipherRSA.doFinal(decB64msg);
-		String stringMsg = new String(decRSAmsg);
+		byte[] decB4msg = Base64.decode(msg.getBytes());
+		byte[] decAESmsg = cipherAES.doFinal(decB4msg);
+		String stringMsg = new String(decAESmsg);
 		String[] splitted = stringMsg.split(" ");
 		response = splitted[0] + " ";
-		for (int i = 1; i < splitted.length; i++) {
-			byte[] decoded = Base64.decode(splitted[i]);
+		for (int i = 0; i < splitted.length; i++) {
+			byte[] decoded = Base64.decode(splitted[i].getBytes());
 			response += new String(decoded) + " ";
 		}
 		return response;
 	}
-
+	
 	public void close() throws IOException {
 		bufferedReader.close();
 	}
+
 }

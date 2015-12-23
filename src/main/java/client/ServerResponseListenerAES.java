@@ -4,13 +4,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+
+import channel.AESreader;
+
 public class ServerResponseListenerAES extends Thread{
 
 	private Client client;
-	private BufferedReader responseReader;
+	private AESreader responseReader;
 	private ConcurrentHashMap<String, String> responseMap;
 	
-	public ServerResponseListenerAES(Client client, BufferedReader responseReader) {
+	public ServerResponseListenerAES(Client client, AESreader responseReader) {
 		this.client = client;
 		this.responseReader = responseReader;
 		responseMap = new ConcurrentHashMap<String, String>();
@@ -50,7 +55,7 @@ public class ServerResponseListenerAES extends Thread{
 					
 					//System.out.println(command + " - " + response.substring(parts[0].length() + 1));
 				}
-			} catch (IOException e) {
+			} catch (IOException | IllegalBlockSizeException | BadPaddingException e) {
 				// TODO
 			}
 		}
