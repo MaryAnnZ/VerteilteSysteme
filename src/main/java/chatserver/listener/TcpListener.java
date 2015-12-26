@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
+import javax.crypto.Cipher;
+
 import chatserver.UserMap;
 import chatserver.handler.ClientHandler;
 
@@ -27,12 +29,23 @@ public class TcpListener extends Thread {
 	private static ConcurrentHashMap<Integer, ClientHandler> connections;
 	
 	private boolean stopped = false;
+	
+	private Cipher cipherRSApublic;
+	private Cipher cipherRSAprivate;
+	private Cipher cipherAESencode;
+	private Cipher cipherAESdecode;
 
-	public TcpListener(ServerSocket serverSocket, UserMap users, ExecutorService threadPool) {
+	public TcpListener(ServerSocket serverSocket, UserMap users, ExecutorService threadPool, Cipher cipherRSApublic, Cipher cipherRSAprivate, Cipher cipherAESencode, Cipher cipherAESdecode) {
 		this.serverSocket = serverSocket;
 		this.users = users;
 		this.threadPool = threadPool;
 		this.connections = new ConcurrentHashMap<Integer, ClientHandler>();
+		
+		this.cipherRSApublic = cipherRSApublic;
+		this.cipherRSAprivate = cipherRSAprivate;
+		this.cipherAESencode = cipherAESencode;
+		this.cipherAESdecode = cipherAESdecode;
+		
 		id = 0;
 	}
 	
@@ -40,7 +53,7 @@ public class TcpListener extends Thread {
 		while (!stopped) {
 			try {
 				
-				ClientHandler client = new ClientHandler(serverSocket.accept(), users, connections, id);
+				ClientHandler client = new ClientHandler(serverSocket.accept(), users, connections, id,cipherRSApublic, cipherRSAprivate, cipherAESencode, cipherAESdecode);
 				connections.put(id, client);
 				id++;
 				

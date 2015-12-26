@@ -1,10 +1,13 @@
 package chatserver;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.SocketException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,9 +18,14 @@ import chatserver.listener.UdpListener;
 import cli.Command;
 import cli.Shell;
 import util.Config;
+import util.Keys;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 
 public class Chatserver implements IChatserverCli, Runnable {
 
@@ -33,6 +41,11 @@ public class Chatserver implements IChatserverCli, Runnable {
 	private final ExecutorService threadPool;
 	
 	private Shell shell;
+	
+	private Cipher cipherRSApublic;
+	private Cipher cipherRSAprivate;
+	private Cipher cipherAESencode;
+	private Cipher cipherAESdecode;
 
 	/**
 	 * @param componentName
@@ -70,6 +83,27 @@ public class Chatserver implements IChatserverCli, Runnable {
 			user.setPassword(userData.getString(s));
 			user.setOnline(false);
 			users.put(userName, user);
+			
+			try {
+				cipherRSApublic = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
+				cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPrivatePEM(new File(config.getString("keys.dir"))));
+				cipherRSAprivate = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
+				cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(config.getString("key"))));
+				cipherAESencode = Cipher.getInstance("AES/CTR/NoPadding");
+				cipherAESdecode = Cipher.getInstance("AES/CTR/NoPadding");
+			} catch (NoSuchAlgorithmException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NoSuchPaddingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}			
 		}
 		
 		// creates new TCP ServerSocket and new UDP DatagramSocket
@@ -93,7 +127,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 	public void run() {
 		
 		// start threads
-		threadPool.execute(new TcpListener(serverSocket, users, threadPool));
+		threadPool.execute(new TcpListener(serverSocket, users, threadPool, cipherRSApublic, cipherRSAprivate, cipherAESencode, cipherAESdecode));
 		threadPool.execute(new UdpListener(datagramSocket, users, threadPool));
 		
 		threadPool.execute(new Thread(shell));

@@ -33,6 +33,18 @@ public class UserMap extends ConcurrentHashMap<String, User> {
 		}
 	}
 	
+	public synchronized String login(String username) {
+		User user = get(username);
+		if(user == null)
+			return "Wrong username.";
+		else if(user.isOnline())
+			return "User already logged in";
+		else {
+			user.setOnline(true);
+			put(username, user);
+			return "Succesfully logged in";
+		}
+	}
 	/**
 	 * logout user, set user status online = false;
 	 * username != null; user must be logged in
