@@ -15,6 +15,7 @@ import javax.crypto.Cipher;
 
 import chatserver.UserMap;
 import chatserver.handler.ClientHandler;
+import util.Config;
 
 /**
  * Thread to listen for incoming connections on the given socket.
@@ -24,6 +25,7 @@ public class TcpListener extends Thread {
 	private ServerSocket serverSocket;
 	private UserMap users;
 	private final ExecutorService threadPool;
+	private Config config;
 	
 	private int id;
 	private static ConcurrentHashMap<Integer, ClientHandler> connections;
@@ -35,12 +37,13 @@ public class TcpListener extends Thread {
 	private Cipher cipherAESencode;
 	private Cipher cipherAESdecode;
 
-	public TcpListener(ServerSocket serverSocket, UserMap users, ExecutorService threadPool, Cipher cipherRSApublic, Cipher cipherRSAprivate, Cipher cipherAESencode, Cipher cipherAESdecode) {
+	public TcpListener(ServerSocket serverSocket, UserMap users, ExecutorService threadPool, Config config, Cipher cipherRSApublic, Cipher cipherRSAprivate, Cipher cipherAESencode, Cipher cipherAESdecode) {
 		this.serverSocket = serverSocket;
 		this.users = users;
 		this.threadPool = threadPool;
 		this.connections = new ConcurrentHashMap<Integer, ClientHandler>();
 		
+		this.config = config;
 		this.cipherRSApublic = cipherRSApublic;
 		this.cipherRSAprivate = cipherRSAprivate;
 		this.cipherAESencode = cipherAESencode;
@@ -53,7 +56,7 @@ public class TcpListener extends Thread {
 		while (!stopped) {
 			try {
 				
-				ClientHandler client = new ClientHandler(serverSocket.accept(), users, connections, id,cipherRSApublic, cipherRSAprivate, cipherAESencode, cipherAESdecode);
+				ClientHandler client = new ClientHandler(serverSocket.accept(), users, connections, id, config, cipherRSApublic, cipherRSAprivate, cipherAESencode, cipherAESdecode);
 				connections.put(id, client);
 				id++;
 				

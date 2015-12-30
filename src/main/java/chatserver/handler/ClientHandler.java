@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.InvalidKeyException;
 import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,6 +21,7 @@ import channel.RSAreader;
 import channel.RSAwriter;
 import chatserver.UserMap;
 import chatserver.listener.TcpListener;
+import util.Config;
 import util.Keys;
 
 public class ClientHandler implements Runnable {
@@ -37,6 +39,7 @@ public class ClientHandler implements Runnable {
 	private String username;
 	private boolean isSender = false;
 
+	private Config config;
 	private Cipher cipherRSApublic;
 	private Cipher cipherRSAprivate;
 	private Cipher cipherAESencode;
@@ -45,12 +48,13 @@ public class ClientHandler implements Runnable {
 	private SecureRandom sRand;
 	private boolean aut;
 
-	public ClientHandler(Socket socket, UserMap users, ConcurrentHashMap<Integer, ClientHandler> connections, int id, Cipher cipherRSApublic, Cipher cipherRSAprivate, Cipher cipherAESencode, Cipher cipherAESdecode) {
+	public ClientHandler(Socket socket, UserMap users, ConcurrentHashMap<Integer, ClientHandler> connections, int id, Config config, Cipher cipherRSApublic, Cipher cipherRSAprivate, Cipher cipherAESencode, Cipher cipherAESdecode) {
 		this.socket = socket;
 		this.users = users;
 		this.connections = connections;
 		this.id = id;
 
+		this.config = config;
 		this.cipherRSApublic = cipherRSApublic;
 		this.cipherRSAprivate = cipherRSAprivate;
 		this.cipherAESencode = cipherAESencode;
@@ -64,7 +68,7 @@ public class ClientHandler implements Runnable {
 		try {
 
 			readerRSA = new RSAreader(new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherRSAprivate);
-			writerRSA = new RSAwriter(new PrintWriter(socket.getOutputStream(), true), cipherRSApublic);
+			//writerRSA = new RSAwriter(new PrintWriter(socket.getOutputStream(), true), cipherRSApublic);
 
 			sRand = new SecureRandom();
 			byte[] challenge = new byte[32];
@@ -86,6 +90,9 @@ public class ClientHandler implements Runnable {
 					} else {
 						String response = "ok! " + splitted[2] + " " + challenge + " " + secretKey  + " " 
 								+ iv;
+						String fileDir = config.getString("keys.dir") + "/" + splitted[1] + ".pub.pem";
+						cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(fileDir)));
+						writerRSA = new RSAwriter(new PrintWriter(socket.getOutputStream(), true), cipherRSApublic);
 						writerRSA.println(response);
 						usernameTemp = splitted[1];
 						readerAES = new AESreader(new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherAESdecode);
@@ -202,6 +209,9 @@ public class ClientHandler implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (BadPaddingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidKeyException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}

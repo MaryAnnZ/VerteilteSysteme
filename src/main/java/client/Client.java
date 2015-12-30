@@ -95,15 +95,16 @@ public class Client implements IClientCli, Runnable {
 			datagramSocket = new DatagramSocket();
 
 			cipherRSApublic = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
-			cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPrivatePEM(new File(config.getString("chatserver.key"))));
+			cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(config.getString("chatserver.key"))));
 			cipherRSAprivate = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
-			cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(config.getString("keys.dir"))));
+			//String fileDir = config.getString("keys.dir") + "/chatserver.pub.pem";
+			//cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(fileDir)));
 			cipherAESencode = Cipher.getInstance("AES/CTR/NoPadding");
 			cipherAESdecode = Cipher.getInstance("AES/CTR/NoPadding");
 			//serverResponse = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			//clientRequest = new  PrintWriter(socket.getOutputStream(), true);
 			writerRSA = new RSAwriter(new PrintWriter(socket.getOutputStream(), true), cipherRSApublic) ;
-			readerRSA = new RSAreader( new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherRSAprivate);
+			//readerRSA = new RSAreader( new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherRSAprivate);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		} catch (NoSuchAlgorithmException e) {
@@ -123,10 +124,6 @@ public class Client implements IClientCli, Runnable {
 		// shell
 		shell = new Shell(componentName, userRequestStream, userResponseStream);
 		shell.register(this);
-
-		// server response listener
-		aesListener = new ServerResponseListenerAES(this, readerAES);
-		rsaListener = new ServerResponseListenerRSA(this, readerRSA);
 
 	}
 
@@ -330,6 +327,7 @@ public class Client implements IClientCli, Runnable {
 		readerAES = new AESreader(new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherAESdecode);
 		writerAES = new AESwriter( new  PrintWriter(socket.getOutputStream(), true), cipherAESencode);
 		writerAES.println(splitted[2]);
+		aesListener = new ServerResponseListenerAES(this, readerAES);
 		return "Authentication successfull";
 	}
 
@@ -357,7 +355,13 @@ public class Client implements IClientCli, Runnable {
 
 		try {
 			writerRSA.println("authenticate " + username + " " + challenge);
+			String fileDir = config.getString("keys.dir") + "/" + username + ".pem";
+			cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(fileDir)));
+			rsaListener = new ServerResponseListenerRSA(this, readerRSA);
 		} catch (IllegalBlockSizeException | BadPaddingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
