@@ -25,9 +25,9 @@ public class ServerResponseListenerRSA extends Thread{
 		while(true) {
 			try {
 				if(responseReader.ready()) {
+					System.out.println("Im here");
 					String response = responseReader.readLine();
-					
-					String[] parts = response.split("_");
+					String[] parts = response.split(" ");
 					String command = parts[0];
 					
 					switch (command) {
@@ -47,7 +47,11 @@ public class ServerResponseListenerRSA extends Thread{
 	
 	public synchronized String getResponse(String command) {
 		String response = null;
-		
+		System.out.println("The size is: " + responseMap.size());
+		for (String k : responseMap.keySet()) {
+			System.out.println("The keys are:");
+			System.out.println(k);
+		}
 		if(responseMap.containsKey(command)) {
 			response = responseMap.get(command);
 			responseMap.remove(command);

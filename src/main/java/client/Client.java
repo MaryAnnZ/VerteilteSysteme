@@ -72,6 +72,8 @@ public class Client implements IClientCli, Runnable {
 	private Cipher cipherRSAprivate;
 	private Cipher cipherAESencode;
 	private Cipher cipherAESdecode;
+	
+	private BufferedReader myBufferedReader;
 
 	/**
 	 * @param componentName
@@ -93,6 +95,8 @@ public class Client implements IClientCli, Runnable {
 		try {
 			socket = new Socket(config.getString("chatserver.host"), config.getInt("chatserver.tcp.port"));
 			datagramSocket = new DatagramSocket();
+			
+			myBufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
 			cipherRSApublic = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
 			cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(config.getString("chatserver.key"))));
@@ -130,7 +134,6 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	public void run() {
 		threadPool.execute(new Thread(shell));
-		threadPool.execute(new Thread(aesListener));
 	}
 
 	@Override
@@ -311,7 +314,7 @@ public class Client implements IClientCli, Runnable {
 	private String handleServerResponseAut() throws InvalidKeyException, InvalidAlgorithmParameterException, IOException, IllegalBlockSizeException, BadPaddingException {
 		try { Thread.sleep(100); } 
 		catch (InterruptedException ex) { }
-		String serverResponse = rsaListener.getResponse("authenticate");
+		String serverResponse = rsaListener.getResponse("!authenticate");
 		// check challenge
 		String[] splitted = serverResponse.split(" ");
 		if (splitted.length != 5 ||  !splitted[1].equals(srand.toString())) {
@@ -323,11 +326,12 @@ public class Client implements IClientCli, Runnable {
 		SecretKey secretKey = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
 		IvParameterSpec iv = new IvParameterSpec(stringIV.getBytes());
 		cipherAESencode.init(Cipher.ENCRYPT_MODE, secretKey, iv);
-		cipherAESencode.init(Cipher.DECRYPT_MODE, secretKey, iv);
-		readerAES = new AESreader(new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherAESdecode);
+		cipherAESdecode.init(Cipher.DECRYPT_MODE, secretKey, iv);
+		readerAES = new AESreader(myBufferedReader, cipherAESdecode);
 		writerAES = new AESwriter( new  PrintWriter(socket.getOutputStream(), true), cipherAESencode);
 		writerAES.println(splitted[2]);
 		aesListener = new ServerResponseListenerAES(this, readerAES);
+		threadPool.execute(new Thread(aesListener));
 		return "Authentication successfull";
 	}
 
@@ -345,6 +349,7 @@ public class Client implements IClientCli, Runnable {
 	// --- Commands needed for Lab 2. Please note that you do not have to
 	// implement them for the first submission. ---
 
+	@Command
 	@Override
 	public String authenticate(String username) throws IOException {
 		//generate challenge
@@ -357,7 +362,10 @@ public class Client implements IClientCli, Runnable {
 			writerRSA.println("authenticate " + username + " " + challenge);
 			String fileDir = config.getString("keys.dir") + "/" + username + ".pem";
 			cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(fileDir)));
+			readerRSA = new RSAreader( myBufferedReader, cipherRSAprivate);
+			System.out.println(myBufferedReader.ready() + " is ready?");
 			rsaListener = new ServerResponseListenerRSA(this, readerRSA);
+			threadPool.execute(rsaListener);
 		} catch (IllegalBlockSizeException | BadPaddingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

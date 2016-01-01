@@ -26,7 +26,10 @@ public class RSAreader {
 	public String readLine() throws IOException, IllegalBlockSizeException, BadPaddingException {
 		String response = "";
 		String msg = bufferedReader.readLine();
+		System.out.println(msg);
 		byte[] decB64msg = Base64.decode(msg.getBytes());
+		System.out.println(decB64msg.toString());
+		System.out.println(new String(decB64msg));
 		byte[] decRSAmsg = cipherRSA.doFinal(decB64msg);
 		String stringMsg = new String(decRSAmsg);
 		String[] splitted = stringMsg.split(" ");
