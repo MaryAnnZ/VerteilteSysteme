@@ -33,6 +33,11 @@ import cli.Shell;
 import util.Config;
 import util.Keys;
 
+import java.security.Key;
+import java.security.MessageDigest;
+
+import javax.crypto.Mac;
+
 public class Client implements IClientCli, Runnable {
 
 	private String componentName;
@@ -188,9 +193,35 @@ public class Client implements IClientCli, Runnable {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(privateSocket.getInputStream()));
 		PrintWriter writer = new PrintWriter(privateSocket.getOutputStream(), true);
 		
-		writer.println(message);
-				
-		return username + " replied with " + reader.readLine();
+		// create and encode hmac for message
+		byte [] hash = Base64.encode(createHMAC(message));
+		writer.println(hash + "_!msg_" + message);
+		
+		// get response and vertify message wasnt changed	
+		parts = reader.readLine().split("_");
+		
+		byte [] receivedHash = Base64.decode(parts[0].getBytes());
+		String receivedCommand = parts[1];
+		String receivedMessage = parts[2];
+		
+		// create new hmac to vertify
+		byte[] computedHash = createHMAC(receivedMessage);
+		
+		boolean validHash = MessageDigest.isEqual(computedHash, receivedHash);
+		
+		
+		if(validHash && receivedCommand.equals("!ack")) {
+			return username + " replied with " + receivedCommand;
+		}
+		else if(validHash && receivedCommand.equals("!tampered")) {
+			return username + " recieved tampered message!";
+		}
+		else if(!validHash && receivedCommand.equals("!ack")) {
+			return "response from " + username + "was tampered!";
+		}
+		else {
+			return "entire conversation with " + username + " was tampered!";
+		}
 	}
 
 	@Override
@@ -212,7 +243,7 @@ public class Client implements IClientCli, Runnable {
 			String[] parts = privateAddress.split(":");
 			
 			serverSocket = new ServerSocket(Integer.parseInt(parts[1]));
-			threadPool.execute(new PrivateMessageListener(this, serverSocket));
+			threadPool.execute(new PrivateMessageListener(this, serverSocket, Keys.readSecretKey(new File(config.getString("hmac.key")))));
 		}
 			
 		return response;
@@ -275,6 +306,27 @@ public class Client implements IClientCli, Runnable {
 		return null;
 	}
 	
+	private byte[] createHMAC(String message) throws IOException {
+		
+		// read the shared secret key
+		Key secretKey = Keys.readSecretKey(new File(config.getString("hmac.key")));
+		
+		// create HMAC
+		Mac hMac;
+		byte[] hash = null;
+		
+		try {
+			hMac = Mac.getInstance("HmacSHA256");
+			hMac.init(secretKey);
+			hMac.update(message.getBytes());
+			hash = hMac.doFinal();
+			
+		} catch (NoSuchAlgorithmException e) { e.printStackTrace();
+		} catch (InvalidKeyException e) { e.printStackTrace(); }
+		
+		return hash;
+	}
+	
 	/**
 	 * @param args
 	 *            the first argument is the name of the {@link Client} component
@@ -290,6 +342,7 @@ public class Client implements IClientCli, Runnable {
 	// implement them for the first submission. ---
 
 	@Override
+	@Command
 	public String authenticate(String username) throws IOException {
 		//generate challenge
 
