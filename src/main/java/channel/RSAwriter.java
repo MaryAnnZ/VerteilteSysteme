@@ -1,6 +1,7 @@
 package channel;
 
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -18,16 +19,18 @@ public class RSAwriter {
 		this.cipherRSA = cipherRSA;
 	}
 
-	public void println(String msg) throws IllegalBlockSizeException, BadPaddingException {
-		String[] splitted = msg.split(" ");
-		String response = splitted[0] + " ";
-		for (int i = 1; i < splitted.length; i++) {
-			byte[] encoded = Base64.encode(splitted[i].getBytes());
-			response += encoded + " ";
-		}
-		byte[] rsaMsg = cipherRSA.doFinal(response.getBytes());
+	public synchronized void println(String msg) throws IllegalBlockSizeException, BadPaddingException {
+//		String[] splitted = msg.split("___");
+		String response = "";
+//		for (int i = 0; i < splitted.length; i++) {
+//			byte[] encoded = Base64.encode(splitted[i].getBytes());
+//			response += new String(encoded) + "___";
+//		}
+		System.out.println("RSA writer beforeRSA: " + response);
+		byte[] rsaMsg = cipherRSA.doFinal(msg.getBytes());
 		byte[] encodedMsg = Base64.encode(rsaMsg);
-		printWriter.println(encodedMsg);	
+		System.out.println("RSA writer afterRSA: " + new String(encodedMsg) + " " + new String(encodedMsg).length());
+		printWriter.println(new String(encodedMsg));
 	}
 
 	public void close() {

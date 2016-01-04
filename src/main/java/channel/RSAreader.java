@@ -2,6 +2,7 @@ package channel;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -23,22 +24,22 @@ public class RSAreader {
 		return bufferedReader.ready();
 	}
 	
-	public String readLine() throws IOException, IllegalBlockSizeException, BadPaddingException {
+	public synchronized String readLine() throws IOException, IllegalBlockSizeException, BadPaddingException {
 		String response = "";
 		String msg = bufferedReader.readLine();
-		System.out.println(msg);
-		byte[] decB64msg = Base64.decode(msg.getBytes());
-		System.out.println(decB64msg.toString());
-		System.out.println(new String(decB64msg));
+		if(msg == null) return null;
+		System.out.println("RSA reader Before RSA: " + msg + " " + msg.length());
+		byte[] decB64msg = Base64.decode(msg);		
 		byte[] decRSAmsg = cipherRSA.doFinal(decB64msg);
 		String stringMsg = new String(decRSAmsg);
-		String[] splitted = stringMsg.split(" ");
-		response = splitted[0] + " ";
-		for (int i = 1; i < splitted.length; i++) {
-			byte[] decoded = Base64.decode(splitted[i]);
-			response += new String(decoded) + " ";
-		}
-		return response;
+		System.out.println("RSA reader after RSA: " + stringMsg);
+//		String[] splitted2 = stringMsg.split("___");
+//		response = "";
+//		for (int i = 0; i < splitted2.length; i++) {
+//			byte[] decoded = Base64.decode(splitted2[i]);
+//			response += new String(decoded) + "___";
+//		}
+		return stringMsg;
 	}
 
 	public void close() throws IOException {
