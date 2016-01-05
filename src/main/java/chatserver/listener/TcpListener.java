@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 
 import chatserver.UserMap;
 import chatserver.handler.ClientHandler;
+import nameserver.INameserver;
 
 /**
  * Thread to listen for incoming connections on the given socket.
@@ -21,6 +22,7 @@ public class TcpListener extends Thread {
 
 	private ServerSocket serverSocket;
 	private UserMap users;
+	private INameserver nameserver;
 	private final ExecutorService threadPool;
 	
 	private int id;
@@ -28,9 +30,10 @@ public class TcpListener extends Thread {
 	
 	private boolean stopped = false;
 
-	public TcpListener(ServerSocket serverSocket, UserMap users, ExecutorService threadPool) {
+	public TcpListener(ServerSocket serverSocket, UserMap users, INameserver nameserver, ExecutorService threadPool) {
 		this.serverSocket = serverSocket;
 		this.users = users;
+		this.nameserver = nameserver;
 		this.threadPool = threadPool;
 		this.connections = new ConcurrentHashMap<Integer, ClientHandler>();
 		id = 0;
@@ -40,7 +43,7 @@ public class TcpListener extends Thread {
 		while (!stopped) {
 			try {
 				
-				ClientHandler client = new ClientHandler(serverSocket.accept(), users, connections, id);
+				ClientHandler client = new ClientHandler(serverSocket.accept(), users, nameserver, connections, id);
 				connections.put(id, client);
 				id++;
 				

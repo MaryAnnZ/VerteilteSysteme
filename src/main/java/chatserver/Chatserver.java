@@ -5,6 +5,10 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.SocketException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +18,7 @@ import chatserver.listener.TcpListener;
 import chatserver.listener.UdpListener;
 import cli.Command;
 import cli.Shell;
+import nameserver.INameserver;
 import util.Config;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,6 +32,8 @@ public class Chatserver implements IChatserverCli, Runnable {
 	private PrintStream userResponseStream;
 	
 	private UserMap users;
+	private Registry registry;
+	private INameserver nameserver;
 	
 	private ServerSocket serverSocket;
 	private DatagramSocket datagramSocket;
@@ -91,9 +98,24 @@ public class Chatserver implements IChatserverCli, Runnable {
 
 	@Override
 	public void run() {
+		try {
+			// obtain registry that was created by the nameserver
+			registry = LocateRegistry.getRegistry(config.getString("registry.host"), 
+												  config.getInt("registry.port"));
+			
+			// look for the bound server remote-object implementing the INameserver interface
+			nameserver = (INameserver) registry.lookup(config.getString("root_id"));
+			
+		} catch (RemoteException e) {
+			throw new RuntimeException(
+					"Error while obtaining registry/server-remote-object.", e);
+		} catch (NotBoundException e) {
+			throw new RuntimeException(
+					"Error while looking for server-remote-object.", e);
+		}
 		
 		// start threads
-		threadPool.execute(new TcpListener(serverSocket, users, threadPool));
+		threadPool.execute(new TcpListener(serverSocket, users, nameserver, threadPool));
 		threadPool.execute(new UdpListener(datagramSocket, users, threadPool));
 		
 		threadPool.execute(new Thread(shell));

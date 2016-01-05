@@ -6,10 +6,15 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.DomainCombiner;
 import java.util.concurrent.ConcurrentHashMap;
 
 import chatserver.UserMap;
 import chatserver.listener.TcpListener;
+import nameserver.INameserver;
+import nameserver.INameserverForChatserver;
+import nameserver.exceptions.AlreadyRegisteredException;
+import nameserver.exceptions.InvalidDomainException;
 
 public class ClientHandler implements Runnable {
 	
@@ -17,6 +22,7 @@ public class ClientHandler implements Runnable {
 	private UserMap users;
 	private BufferedReader reader;
 	private PrintWriter writer;
+	private INameserver nameserver;
 	
 	private int id;
 	private ConcurrentHashMap<Integer, ClientHandler> connections;
@@ -24,9 +30,10 @@ public class ClientHandler implements Runnable {
 	private String username;
 	private boolean isSender = false;
 	
-	public ClientHandler(Socket socket, UserMap users, ConcurrentHashMap<Integer, ClientHandler> connections, int id) {
+	public ClientHandler(Socket socket, UserMap users, INameserver nameserver, ConcurrentHashMap<Integer, ClientHandler> connections, int id) {
 		this.socket = socket;
 		this.users = users;
+		this.nameserver = nameserver;
 		this.connections = connections;
 		this.id = id;
 	}
@@ -99,7 +106,10 @@ public class ClientHandler implements Runnable {
 					} else if(username == null) {
 						response = "register_User must be logged in.";
 					} else {
-						response = "register_" + users.registerPort(username, parts[1]);
+						//response = "register_" + users.registerPort(username, parts[1]);
+						
+						nameserver.registerUser(username, parts[1]);
+						response = "Successfully registerd address for " + username;						
 					}
 					
 				}
@@ -109,9 +119,18 @@ public class ClientHandler implements Runnable {
 						response = "lookup_invalid parameters";
 					} else if(username == null) {
 						response = "lookup_User must be logged in.";
-					} else
-						response = "lookup_" + users.lookUpPort(parts[1]);					
-					
+					} else {
+						//response = "lookup_" + users.lookUpPort(parts[1]);
+						
+						String[] domain = parts[1].split(".");
+						
+						INameserverForChatserver server = nameserver.getNameserver(domain[domain.length-1]);
+						for(int i = domain.length-2; i > 0; i--) {
+							server = server.getNameserver(domain[i]);
+						}
+						
+						response = server.lookup(domain[0]);
+					}
 				} else {
 					response = "Unknown command.";
 				}
@@ -122,6 +141,10 @@ public class ClientHandler implements Runnable {
 			}
 		} catch(IOException e) {
 			
+		} catch (AlreadyRegisteredException e) {
+			e.printStackTrace();
+		} catch (InvalidDomainException e) {
+			e.printStackTrace();
 		} finally {
 			try {
                 if (!this.socket.isClosed()) {
