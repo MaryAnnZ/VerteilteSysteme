@@ -18,13 +18,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import chatserver.listener.TcpListener;
 import cli.Command;
 import cli.Shell;
 import util.Config;
 import util.Keys;
-
 import javax.crypto.Mac;
 import org.bouncycastle.util.encoders.Base64;
 
@@ -161,8 +158,8 @@ public class Client implements IClientCli, Runnable {
 		PrintWriter writer = new PrintWriter(privateSocket.getOutputStream(), true);
 		
 		// create and encode hmac for message
-		byte [] hash = Base64.encode(createHMAC(message));
-		writer.println(hash + "_!msg_" + message);
+		byte [] hash = Base64.encode(createHMAC("!msg" + message));		
+		writer.println(new String(hash) + "_!msg_" + message);
 		
 		// get response and vertify message wasnt changed	
 		parts = reader.readLine().split("_");
@@ -172,7 +169,7 @@ public class Client implements IClientCli, Runnable {
 		String receivedMessage = parts[2];
 		
 		// create new hmac to vertify
-		byte[] computedHash = createHMAC(receivedMessage);
+		byte[] computedHash = createHMAC(receivedCommand + receivedMessage);
 		
 		boolean validHash = MessageDigest.isEqual(computedHash, receivedHash);
 		
@@ -184,7 +181,7 @@ public class Client implements IClientCli, Runnable {
 			return username + " recieved tampered message!";
 		}
 		else if(!validHash && receivedCommand.equals("!ack")) {
-			return "response from " + username + "was tampered!";
+			return "response from " + username + " was tampered!";
 		}
 		else {
 			return "entire conversation with " + username + " was tampered!";
@@ -233,8 +230,8 @@ public class Client implements IClientCli, Runnable {
 		threadPool.shutdown();
 		clientRequest.close();
 		serverResponse.close();
-		userRequestStream.close();
-		userResponseStream.close();
+		//userRequestStream.close();
+		//userResponseStream.close();
 		return "shutdown client";
 	}
 	
@@ -258,7 +255,7 @@ public class Client implements IClientCli, Runnable {
 		return responseListener.getResponse(command);
     }
 	
-private byte[] createHMAC(String message) throws IOException {
+	private byte[] createHMAC(String message) throws IOException {
 		
 		// read the shared secret key
 		Key secretKey = Keys.readSecretKey(new File(config.getString("hmac.key")));

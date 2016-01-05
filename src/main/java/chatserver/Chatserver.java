@@ -107,7 +107,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 
 	@Override
 	@Command
-	public synchronized String exit() throws IOException {
+	public String exit() throws IOException {
 		
 		serverSocket.close();
 		datagramSocket.close();

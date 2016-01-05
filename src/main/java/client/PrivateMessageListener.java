@@ -48,31 +48,21 @@ public class PrivateMessageListener extends Thread {
 				String command = parts[1];
 				String message = parts[2];
 				
-				if(command.equals("!msg")) {
-					
-					// create new hmac to vertify
-					Mac hMac;
-					byte[] computedHash = null;
-					
-					try {
-						hMac = Mac.getInstance("HmacSHA256");
-						hMac.init(secretKey);
-						hMac.update(message.getBytes());
-						computedHash = hMac.doFinal();
-						
-					} catch (NoSuchAlgorithmException e) { e.printStackTrace(); 
-					} catch (InvalidKeyException e) { e.printStackTrace(); }
-					
-					// print response
-					if(MessageDigest.isEqual(computedHash, receivedHash)) {
-						writer.println(Base64.encode(computedHash) + "_!ack_" + message);
-					} else {
-						writer.println(Base64.encode(computedHash) + "_!tampered_" + message);
-					}
-					
-					client.writePrivateMessage(message);
-					break;
+				// create new hmac to vertify
+				byte[] computedHash = createHMAC(command + message);
+				
+				// print response
+				byte[] hash;
+				if(MessageDigest.isEqual(computedHash, receivedHash)) {
+					hash = Base64.encode(createHMAC("!ack" + message));
+					writer.println(new String(hash) + "_!ack_" + message);
+				} else {
+					hash = Base64.encode(createHMAC("!tampered" + message));
+					writer.println(new String(hash) + "_!tampered_" + message);
 				}
+				
+				client.writePrivateMessage(message);
+				break;
 
 			} catch (IOException e) {
 				/*System.err
@@ -80,16 +70,33 @@ public class PrivateMessageListener extends Thread {
 								+ e.getMessage());*/
 				break;
 			} finally {
-				if (socket != null && !socket.isClosed())
+				if (socket != null && !socket.isClosed()) {
 					try {
 						socket.close();
 					} catch (IOException e) {
 						// Ignored because we cannot handle it
 					}
-
+				}
 			}
-
 		}
+	}
+	
+	private byte[] createHMAC(String message) throws IOException {
+		
+		// create HMAC
+		Mac hMac;
+		byte[] hash = null;
+		
+		try {
+			hMac = Mac.getInstance("HmacSHA256");
+			hMac.init(secretKey);
+			hMac.update(message.getBytes());
+			hash = hMac.doFinal();
+			
+		} catch (NoSuchAlgorithmException e) { e.printStackTrace();
+		} catch (InvalidKeyException e) { e.printStackTrace(); }
+		
+		return hash;
 	}
 
 }
