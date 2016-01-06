@@ -29,7 +29,7 @@ public class ServerResponseListenerRSA extends Thread{
 				if(true) {
 					String response;
 					while ((response = responseReader.readLine()) != null) {
-						System.out.println(response);
+						//System.out.println(response);
 						String[] parts = response.split("___");
 						String command = parts[0];
 

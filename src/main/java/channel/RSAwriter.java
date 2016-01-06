@@ -20,7 +20,6 @@ public class RSAwriter {
 	}
 
 	public synchronized void println(String msg) throws IllegalBlockSizeException, BadPaddingException {
-		System.out.println("RSA msg: " + msg);
 		byte[] rsaMsg = cipherRSA.doFinal(msg.getBytes());
 		byte[] encodedMsg = Base64.encode(rsaMsg);
 		printWriter.println(new String(encodedMsg));

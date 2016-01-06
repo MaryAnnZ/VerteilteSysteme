@@ -40,7 +40,6 @@ public class AESreader {
 		if (msg == null) return null;
 		byte[] decB4msg = Base64.decode(msg.getBytes());
 		byte[] decAESmsg = cipherAES.doFinal(decB4msg);
-		System.out.println("AES reading " + new String(decAESmsg));
 		return new String(decAESmsg);
 	}
 

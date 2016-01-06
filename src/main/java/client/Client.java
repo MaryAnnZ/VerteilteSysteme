@@ -356,7 +356,6 @@ public class Client implements IClientCli, Runnable {
 
 	public String handleServerResponseAut() throws InvalidKeyException, InvalidAlgorithmParameterException, IOException, IllegalBlockSizeException, BadPaddingException {
 		String serverResponse;
-		System.out.println("Check AES 1");
 		if ((serverResponse = rsaListener.getResponse("authenticate")) != null) {
 			// check challenge
 			String[] splitted = serverResponse.split("___");
@@ -377,7 +376,6 @@ public class Client implements IClientCli, Runnable {
 			readerAES = new AESreader(myBufferedReaderRSA, cipherAESdecode, secretKey, iv);
 			writerAES = new AESwriter(myPrintWriterRSA, cipherAESencode, secretKey, iv);
 			aesListener = new ServerResponseListenerAES(this, readerAES);
-			System.out.println("Check AES 2");
 			threadPool.execute(new Thread(aesListener));
 			writerAES.println(splitted[2]);
 			loggedInYet = true;
@@ -417,7 +415,6 @@ public class Client implements IClientCli, Runnable {
 			threadPool.execute(rsaListener);
 			}
 			writerRSA.println("authenticate___" + username + "___" + new String(Base64.encode(challenge)));
-			System.out.println("Authenticating...");
 		} catch (IllegalBlockSizeException | BadPaddingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

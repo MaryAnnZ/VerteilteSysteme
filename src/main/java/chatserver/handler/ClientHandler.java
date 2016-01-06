@@ -113,7 +113,7 @@ public class ClientHandler implements Runnable {
 							connections.remove(id);
 						} else {
 							String response = "!ok___" + splitted[2] + "___" + new String(Base64.encode(challenge)) + "___" + new String(Base64.encode(secretKey.getEncoded()))  + "___" + new String(Base64.encode(iv));
-							System.out.println("IM HERE");
+						
 							String fileDir = config.getString("keys.dir") + "/" + splitted[1] + ".pub.pem";
 							cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(fileDir)));
 							writerRSA = new RSAwriter(myPrintWriterRSA, cipherRSApublic);
@@ -127,7 +127,6 @@ public class ClientHandler implements Runnable {
 							break;
 						}
 					}
-					System.out.println("waiting for response");
 					boolean readAES = true;
 					while (readAES && (request = readerAES.readLine()) != null) {
 						System.out.println("Client sent the following request: " + request);
@@ -237,7 +236,6 @@ public class ClientHandler implements Runnable {
 						} 
 
 						// print request
-						System.out.println("Sending msg");
 						writerAES.println(response);
 					}
 				}
