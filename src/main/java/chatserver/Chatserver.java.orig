@@ -6,12 +6,15 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.SocketException;
+<<<<<<< HEAD
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+=======
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+>>>>>>> secured_channels
 import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -144,7 +147,11 @@ public class Chatserver implements IChatserverCli, Runnable {
 		}
 		
 		// start threads
-		threadPool.execute(new TcpListener(serverSocket, users, nameserver, threadPool, config, cipherRSApublic, cipherRSAprivate));
+<<<<<<< HEAD
+		threadPool.execute(new TcpListener(serverSocket, users, nameserver, threadPool));
+=======
+		threadPool.execute(new TcpListener(serverSocket, users, threadPool, config, cipherRSApublic, cipherRSAprivate));
+>>>>>>> secured_channels
 		threadPool.execute(new UdpListener(datagramSocket, users, threadPool));
 		
 		threadPool.execute(new Thread(shell));
@@ -159,10 +166,13 @@ public class Chatserver implements IChatserverCli, Runnable {
 	@Override
 	@Command
 	public String exit() throws IOException {
+		
 		serverSocket.close();
 		datagramSocket.close();
+		
 		userRequestStream.close();
 		userResponseStream.close();
+		
 		threadPool.shutdown();
 		
 		return "shutdown " + componentName;

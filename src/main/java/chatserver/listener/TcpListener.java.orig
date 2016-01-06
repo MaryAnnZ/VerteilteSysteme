@@ -17,8 +17,11 @@ import javax.crypto.NoSuchPaddingException;
 
 import chatserver.UserMap;
 import chatserver.handler.ClientHandler;
+<<<<<<< HEAD
 import nameserver.INameserver;
+=======
 import util.Config;
+>>>>>>> secured_channels
 
 /**
  * Thread to listen for incoming connections on the given socket.
@@ -28,7 +31,6 @@ public class TcpListener extends Thread {
 	private ServerSocket serverSocket;
 	private UserMap users;
 	private INameserver nameserver;
-	
 	private final ExecutorService threadPool;
 	private Config config;
 	
@@ -40,7 +42,11 @@ public class TcpListener extends Thread {
 	private Cipher cipherRSApublic;
 	private Cipher cipherRSAprivate;
 
-	public TcpListener(ServerSocket serverSocket, UserMap users, INameserver nameserver, ExecutorService threadPool, Config config, Cipher cipherRSApublic, Cipher cipherRSAprivate) {
+<<<<<<< HEAD
+	public TcpListener(ServerSocket serverSocket, UserMap users, INameserver nameserver, ExecutorService threadPool) {
+=======
+	public TcpListener(ServerSocket serverSocket, UserMap users, ExecutorService threadPool, Config config, Cipher cipherRSApublic, Cipher cipherRSAprivate) {
+>>>>>>> secured_channels
 		this.serverSocket = serverSocket;
 		this.users = users;
 		this.nameserver = nameserver;
@@ -58,7 +64,11 @@ public class TcpListener extends Thread {
 		while (!stopped) {
 			try {
 				
-				ClientHandler client = new ClientHandler(serverSocket.accept(), users, nameserver, connections, id, config, cipherRSApublic, cipherRSAprivate, Cipher.getInstance("AES/CTR/NoPadding"), Cipher.getInstance("AES/CTR/NoPadding"));
+<<<<<<< HEAD
+				ClientHandler client = new ClientHandler(serverSocket.accept(), users, nameserver, connections, id);
+=======
+				ClientHandler client = new ClientHandler(serverSocket.accept(), users, connections, id, config, cipherRSApublic, cipherRSAprivate, Cipher.getInstance("AES/CTR/NoPadding"), Cipher.getInstance("AES/CTR/NoPadding"));
+>>>>>>> secured_channels
 				connections.put(id, client);
 				id++;
 				

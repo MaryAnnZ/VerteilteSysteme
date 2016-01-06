@@ -2,15 +2,22 @@ package client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ServerResponseListener extends Thread{
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+
+import channel.AESreader;
+
+public class ServerResponseListenerAES extends Thread{
 
 	private Client client;
-	private BufferedReader responseReader;
+	private AESreader responseReader;
 	private ConcurrentHashMap<String, String> responseMap;
 	
-	public ServerResponseListener(Client client, BufferedReader responseReader) {
+	public ServerResponseListenerAES(Client client, AESreader responseReader) {
 		this.client = client;
 		this.responseReader = responseReader;
 		responseMap = new ConcurrentHashMap<String, String>();
@@ -19,10 +26,10 @@ public class ServerResponseListener extends Thread{
 	public void run() {
 		while(true) {
 			try {
-				if(responseReader.ready()) {
+				//if(responseReader.ready()) {
+				if (true) {
 					String response = responseReader.readLine();
-					
-					String[] parts = response.split("_");
+					String[] parts = response.split(" ");
 					String command = parts[0];
 					
 					switch (command) {
@@ -44,14 +51,20 @@ public class ServerResponseListener extends Thread{
 	
 						case "lookup":
 							responseMap.put("lookup", response.substring(parts[0].length() + 1)); break;	
-							
+						
 						default: break;
 						}
 					
 					//System.out.println(command + " - " + response.substring(parts[0].length() + 1));
 				}
-			} catch (IOException e) {
+			} catch (IOException | IllegalBlockSizeException | BadPaddingException e) {
 				// TODO
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidAlgorithmParameterException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
@@ -66,5 +79,14 @@ public class ServerResponseListener extends Thread{
 		}
 		
 		return response;
+	}
+	
+	public void close() {
+		try {
+			responseReader.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

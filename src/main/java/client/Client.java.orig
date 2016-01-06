@@ -12,11 +12,18 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.InvalidAlgorithmParameterException;
+<<<<<<< HEAD
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+=======
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -40,12 +47,16 @@ import channel.AESwriter;
 import channel.RSAreader;
 import channel.RSAwriter;
 import chatserver.listener.TcpListener;
+>>>>>>> secured_channels
 import cli.Command;
 import cli.Shell;
 import util.Config;
 import util.Keys;
+<<<<<<< HEAD
 import javax.crypto.Mac;
 import org.bouncycastle.util.encoders.Base64;
+=======
+>>>>>>> secured_channels
 
 public class Client implements IClientCli, Runnable {
 
@@ -132,7 +143,8 @@ public class Client implements IClientCli, Runnable {
 
 		// shell
 		shell = new Shell(componentName, userRequestStream, userResponseStream);
-		shell.register(this);		
+		shell.register(this);
+
 	}
 
 	@Override
@@ -141,7 +153,6 @@ public class Client implements IClientCli, Runnable {
 	}
 
 	@Override
-	@Command
 	public String login(String username, String password) throws IOException {		
 		if (readerAES != null && writerAES != null) {
 			try {
@@ -244,7 +255,8 @@ public class Client implements IClientCli, Runnable {
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(privateSocket.getInputStream()));
 		PrintWriter writer = new PrintWriter(privateSocket.getOutputStream(), true);
-
+<<<<<<< HEAD
+		
 		// create and encode hmac for message
 		byte [] hash = Base64.encode(createHMAC("!msg" + message));		
 		writer.println(new String(hash) + "_!msg_" + message);
@@ -274,6 +286,12 @@ public class Client implements IClientCli, Runnable {
 		else {
 			return "entire conversation with " + username + " was tampered!";
 		}
+=======
+
+		writer.println(message);
+
+		return username + " replied with " + reader.readLine();
+>>>>>>> secured_channels
 	}
 
 	@Override
@@ -318,11 +336,22 @@ public class Client implements IClientCli, Runnable {
 			if(response.startsWith("Success")) {
 				String[] parts = privateAddress.split(":");
 
-				serverSocket = new ServerSocket(Integer.parseInt(parts[1]));
+<<<<<<< HEAD
+		clientRequest.println("register_" + privateAddress);
+		
+		String response = getServerResponse("register");
+		if(response.startsWith("Success")) {
+			String[] parts = privateAddress.split(":");
+			
+			serverSocket = new ServerSocket(Integer.parseInt(parts[1]));
 			threadPool.execute(new PrivateMessageListener(this, serverSocket, Keys.readSecretKey(new File(config.getString("hmac.key")))));
+=======
+				serverSocket = new ServerSocket(Integer.parseInt(parts[1]));
+				threadPool.execute(new PrivateMessageListener(this, serverSocket));
 			}
 
 			return response;
+>>>>>>> secured_channels
 		}
 		return "no AES channel";
 	}
@@ -340,6 +369,14 @@ public class Client implements IClientCli, Runnable {
 	@Command
 	public String exit() throws IOException {
 		logout();
+<<<<<<< HEAD
+		socket.close();
+		threadPool.shutdown();
+		clientRequest.close();
+		serverResponse.close();
+		//userRequestStream.close();
+		//userResponseStream.close();
+=======
 		if (socket != null)
 			socket.close();
 		if (threadPool != null)
@@ -360,6 +397,7 @@ public class Client implements IClientCli, Runnable {
 			myBufferedReaderRSA.close();
 		if (myPrintWriterRSA != null)
 			myPrintWriterRSA.close();
+>>>>>>> secured_channels
 		return "shutdown client";
 	}
 
@@ -412,6 +450,10 @@ public class Client implements IClientCli, Runnable {
 		}
 		return "Connection failed";
 	}
+
+<<<<<<< HEAD
+		return responseListener.getResponse(command);
+    }
 	
 	private byte[] createHMAC(String message) throws IOException {
 		
@@ -433,7 +475,9 @@ public class Client implements IClientCli, Runnable {
 		
 		return hash;
 	}
-
+	
+=======
+>>>>>>> secured_channels
 	/**
 	 * @param args
 	 *            the first argument is the name of the {@link Client} component
