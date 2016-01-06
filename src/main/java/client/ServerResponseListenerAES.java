@@ -2,6 +2,8 @@ package client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.crypto.BadPaddingException;
@@ -24,9 +26,9 @@ public class ServerResponseListenerAES extends Thread{
 	public void run() {
 		while(true) {
 			try {
-				if(responseReader.ready()) {
+				//if(responseReader.ready()) {
+				if (true) {
 					String response = responseReader.readLine();
-					
 					String[] parts = response.split(" ");
 					String command = parts[0];
 					
@@ -57,6 +59,12 @@ public class ServerResponseListenerAES extends Thread{
 				}
 			} catch (IOException | IllegalBlockSizeException | BadPaddingException e) {
 				// TODO
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidAlgorithmParameterException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
@@ -71,5 +79,14 @@ public class ServerResponseListenerAES extends Thread{
 		}
 		
 		return response;
+	}
+	
+	public void close() {
+		try {
+			responseReader.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

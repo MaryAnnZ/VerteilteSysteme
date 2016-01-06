@@ -41,7 +41,6 @@ import channel.RSAwriter;
 import chatserver.listener.TcpListener;
 import cli.Command;
 import cli.Shell;
-import util.CompareKeys;
 import util.Config;
 import util.Keys;
 
@@ -79,8 +78,8 @@ public class Client implements IClientCli, Runnable {
 
 	private BufferedReader myBufferedReaderRSA;
 	private PrintWriter myPrintWriterRSA;
-	private BufferedReader myBufferedReaderAES;
-	private PrintWriter myPrintWriterAES;
+
+	private boolean loggedInYet = false;
 
 	/**
 	 * @param componentName
@@ -105,20 +104,13 @@ public class Client implements IClientCli, Runnable {
 
 			myBufferedReaderRSA = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			myPrintWriterRSA = new  PrintWriter(socket.getOutputStream(), true);
-			myBufferedReaderAES = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			myPrintWriterAES = new  PrintWriter(socket.getOutputStream(), true);
 
 			cipherRSApublic = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
 			cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(config.getString("chatserver.key"))));
 			cipherRSAprivate = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
-			//String fileDir = config.getString("keys.dir") + "/chatserver.pub.pem";
-			//cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(fileDir)));
 			cipherAESencode = Cipher.getInstance("AES/CTR/NoPadding");
 			cipherAESdecode = Cipher.getInstance("AES/CTR/NoPadding");
-			//serverResponse = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			//clientRequest = new  PrintWriter(socket.getOutputStream(), true);
 			writerRSA = new RSAwriter(myPrintWriterRSA, cipherRSApublic) ;
-			//readerRSA = new RSAreader( new BufferedReader(new InputStreamReader(socket.getInputStream())), cipherRSAprivate);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		} catch (NoSuchAlgorithmException e) {
@@ -147,12 +139,17 @@ public class Client implements IClientCli, Runnable {
 	}
 
 	@Override
-	@Command
 	public String login(String username, String password) throws IOException {		
 		if (readerAES != null && writerAES != null) {
 			try {
 				writerAES.println("login___" + username + "___" + password);
 			} catch (IllegalBlockSizeException | BadPaddingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidAlgorithmParameterException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -170,6 +167,12 @@ public class Client implements IClientCli, Runnable {
 			} catch (IllegalBlockSizeException | BadPaddingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidAlgorithmParameterException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			return getServerResponse("logout");
 		}
@@ -183,6 +186,12 @@ public class Client implements IClientCli, Runnable {
 			try {
 				writerAES.println("send___" + message);
 			} catch (IllegalBlockSizeException | BadPaddingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidAlgorithmParameterException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -247,6 +256,12 @@ public class Client implements IClientCli, Runnable {
 			} catch (IllegalBlockSizeException | BadPaddingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidAlgorithmParameterException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			return getServerResponse("lookup");
 		}
@@ -260,6 +275,12 @@ public class Client implements IClientCli, Runnable {
 			try {
 				writerAES.println("register___" + privateAddress);
 			} catch (IllegalBlockSizeException | BadPaddingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidAlgorithmParameterException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -290,16 +311,26 @@ public class Client implements IClientCli, Runnable {
 	@Command
 	public String exit() throws IOException {
 		logout();
-		socket.close();
-		threadPool.shutdown();
-		writerAES.close();
-		readerAES.close();
-		writerRSA.close();
-		readerRSA.close();
-		userRequestStream.close();
-		userResponseStream.close();
-		rsaListener.close();
-		//TODO aes listene
+		if (socket != null)
+			socket.close();
+		if (threadPool != null)
+			threadPool.shutdown();
+		if (writerAES != null)
+			writerAES.close();
+		if (readerAES != null)
+			readerAES.close();
+		if (writerRSA != null)
+			writerRSA.close();
+		if (readerRSA != null)
+			readerRSA.close();
+		if (rsaListener != null)
+			rsaListener.close();
+		if (aesListener != null)
+			aesListener.close();
+		if (myBufferedReaderRSA != null)
+			myBufferedReaderRSA.close();
+		if (myPrintWriterRSA != null)
+			myPrintWriterRSA.close();
 		return "shutdown client";
 	}
 
@@ -325,6 +356,7 @@ public class Client implements IClientCli, Runnable {
 
 	public String handleServerResponseAut() throws InvalidKeyException, InvalidAlgorithmParameterException, IOException, IllegalBlockSizeException, BadPaddingException {
 		String serverResponse;
+		System.out.println("Check AES 1");
 		if ((serverResponse = rsaListener.getResponse("authenticate")) != null) {
 			// check challenge
 			String[] splitted = serverResponse.split("___");
@@ -342,11 +374,13 @@ public class Client implements IClientCli, Runnable {
 			IvParameterSpec iv = new IvParameterSpec(Base64.decode(stringIV));
 			cipherAESencode.init(Cipher.ENCRYPT_MODE, secretKey, iv);
 			cipherAESdecode.init(Cipher.DECRYPT_MODE, secretKey, iv);
-			readerAES = new AESreader(myBufferedReaderRSA, cipherAESdecode);
-			writerAES = new AESwriter(myPrintWriterRSA, cipherAESencode);
+			readerAES = new AESreader(myBufferedReaderRSA, cipherAESdecode, secretKey, iv);
+			writerAES = new AESwriter(myPrintWriterRSA, cipherAESencode, secretKey, iv);
 			aesListener = new ServerResponseListenerAES(this, readerAES);
+			System.out.println("Check AES 2");
 			threadPool.execute(new Thread(aesListener));
 			writerAES.println(splitted[2]);
+			loggedInYet = true;
 			return "Authentication successfull";
 		}
 		return "Connection failed";
@@ -373,17 +407,17 @@ public class Client implements IClientCli, Runnable {
 
 		srand = new SecureRandom();
 		srand.nextBytes(challenge);
-		
+
 		try {
+			if (!loggedInYet) {
 			String fileDir = config.getString("keys.dir") + "/" + username + ".pem";
 			cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(fileDir)));
 			readerRSA = new RSAreader( myBufferedReaderRSA, cipherRSAprivate);
 			rsaListener = new ServerResponseListenerRSA(this, readerRSA);
 			threadPool.execute(rsaListener);
-			writerAES = new AESwriter(myPrintWriterAES, cipherAESencode);
-			String stringChallenge = new String(challenge, StandardCharsets.UTF_8);
+			}
 			writerRSA.println("authenticate___" + username + "___" + new String(Base64.encode(challenge)));
-			System.out.println(new String("My challenge: " + new String(Base64.encode(challenge))));
+			System.out.println("Authenticating...");
 		} catch (IllegalBlockSizeException | BadPaddingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

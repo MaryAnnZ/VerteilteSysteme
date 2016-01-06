@@ -44,8 +44,6 @@ public class Chatserver implements IChatserverCli, Runnable {
 	
 	private Cipher cipherRSApublic;
 	private Cipher cipherRSAprivate;
-	private Cipher cipherAESencode;
-	private Cipher cipherAESdecode;
 
 	/**
 	 * @param componentName
@@ -86,11 +84,8 @@ public class Chatserver implements IChatserverCli, Runnable {
 			
 			try {
 				cipherRSApublic = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
-				//cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(config.getString("keys.dir"))));
 				cipherRSAprivate = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
 				cipherRSAprivate.init(Cipher.DECRYPT_MODE, Keys.readPrivatePEM(new File(config.getString("key"))));
-				cipherAESencode = Cipher.getInstance("AES/CTR/NoPadding");
-				cipherAESdecode = Cipher.getInstance("AES/CTR/NoPadding");
 			} catch (NoSuchAlgorithmException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -127,7 +122,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 	public void run() {
 		
 		// start threads
-		threadPool.execute(new TcpListener(serverSocket, users, threadPool, config, cipherRSApublic, cipherRSAprivate, cipherAESencode, cipherAESdecode));
+		threadPool.execute(new TcpListener(serverSocket, users, threadPool, config, cipherRSApublic, cipherRSAprivate));
 		threadPool.execute(new UdpListener(datagramSocket, users, threadPool));
 		
 		threadPool.execute(new Thread(shell));

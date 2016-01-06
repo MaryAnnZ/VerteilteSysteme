@@ -20,16 +20,9 @@ public class RSAwriter {
 	}
 
 	public synchronized void println(String msg) throws IllegalBlockSizeException, BadPaddingException {
-//		String[] splitted = msg.split("___");
-		String response = "";
-//		for (int i = 0; i < splitted.length; i++) {
-//			byte[] encoded = Base64.encode(splitted[i].getBytes());
-//			response += new String(encoded) + "___";
-//		}
-		System.out.println("RSA writer beforeRSA: " + response);
+		System.out.println("RSA msg: " + msg);
 		byte[] rsaMsg = cipherRSA.doFinal(msg.getBytes());
 		byte[] encodedMsg = Base64.encode(rsaMsg);
-		System.out.println("RSA writer afterRSA: " + new String(encodedMsg) + " " + new String(encodedMsg).length());
 		printWriter.println(new String(encodedMsg));
 	}
 
