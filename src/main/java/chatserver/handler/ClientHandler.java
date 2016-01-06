@@ -186,10 +186,10 @@ public class ClientHandler implements Runnable {
 								} else if(username == null) {
 									response = "register User must be logged in.";
 								} else {
-						//response = "register_" + users.registerPort(username, parts[1]);
-						
-						nameserver.registerUser(username, parts[1]);
-						response = "Successfully registerd address for " + username;						
+									//response = "register_" + users.registerPort(username, parts[1]);
+									
+									nameserver.registerUser(username, parts[1]);
+									response = "register_Successfully registerd address for " + username;						
 								}
 
 							}
@@ -199,18 +199,18 @@ public class ClientHandler implements Runnable {
 									response = "lookup invalid parameters";
 								} else if(username == null) {
 									response = "lookup User must be logged in.";
-					} else {
-						//response = "lookup_" + users.lookUpPort(parts[1]);
-						
-						String[] domain = parts[1].split(".");
-						
-						INameserverForChatserver server = nameserver.getNameserver(domain[domain.length-1]);
-						for(int i = domain.length-2; i > 0; i--) {
-							server = server.getNameserver(domain[i]);
-						}
-						
-						response = server.lookup(domain[0]);
-					}
+								} else {
+									//response = "lookup_" + users.lookUpPort(parts[1]);
+									
+									String[] domain = parts[1].split(".");
+									
+									INameserverForChatserver server = nameserver.getNameserver(domain[domain.length-1]);
+									for(int i = domain.length-2; i > 0; i--) {
+										server = server.getNameserver(domain[i]);
+									}
+									
+									response = "lookup_" + server.lookup(domain[0]);
+								}
 							} else {
 								response = "Unknown command.";
 							}
