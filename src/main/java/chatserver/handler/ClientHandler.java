@@ -38,7 +38,7 @@ public class ClientHandler implements Runnable {
 	private Socket socket;
 	private UserMap users;
 	private INameserver nameserver;
-	
+
 	private RSAreader readerRSA;
 	private RSAwriter writerRSA;
 	private AESreader readerAES;
@@ -50,7 +50,7 @@ public class ClientHandler implements Runnable {
 	private PrintWriter myPrintWriterRSA;
 
 	private String username;
-	
+
 	private Config config;
 	private Cipher cipherRSApublic;
 	private Cipher cipherRSAprivate;
@@ -61,7 +61,9 @@ public class ClientHandler implements Runnable {
 	private boolean aut;
 	private boolean running = true;
 
-	public ClientHandler(Socket socket, UserMap users, INameserver nameserver, ConcurrentHashMap<Integer, ClientHandler> connections, int id, Config config, Cipher cipherRSApublic, Cipher cipherRSAprivate, Cipher cipherAESencode, Cipher cipherAESdecode) throws IOException {
+	public ClientHandler(Socket socket, UserMap users, INameserver nameserver,
+			ConcurrentHashMap<Integer, ClientHandler> connections, int id, Config config, Cipher cipherRSApublic,
+			Cipher cipherRSAprivate, Cipher cipherAESencode, Cipher cipherAESdecode) throws IOException {
 		this.socket = socket;
 		this.users = users;
 		this.nameserver = nameserver;
@@ -89,7 +91,7 @@ public class ClientHandler implements Runnable {
 
 			KeyGenerator generator = KeyGenerator.getInstance("AES");
 			generator.init(256);
-			SecretKey secretKey =generator.generateKey();
+			SecretKey secretKey = generator.generateKey();
 
 			byte[] iv = new byte[16];
 			sRand.nextBytes(iv);
@@ -99,11 +101,12 @@ public class ClientHandler implements Runnable {
 			boolean readRSA = true;
 
 			IvParameterSpec ivSpec = new IvParameterSpec(iv);
-			SecretKey secretKeySpec  = new SecretKeySpec(secretKey.getEncoded(), 0,  new String(secretKey.getEncoded()).length(), "AES");
+			SecretKey secretKeySpec = new SecretKeySpec(secretKey.getEncoded(), 0,
+					new String(secretKey.getEncoded()).length(), "AES");
 			// read client requests
 			try {
 				while (running) {
-					System.out.println("AM I HERE?");
+//					System.out.println("AM I HERE?");
 					while (readRSA && ((request = readerRSA.readLine()) != null)) {
 						String[] splitted = request.split("___");
 						if (splitted.length != 3) {
@@ -111,8 +114,10 @@ public class ClientHandler implements Runnable {
 							this.socket.close();
 							connections.remove(id);
 						} else {
-							String response = "!ok___" + splitted[2] + "___" + new String(Base64.encode(challenge)) + "___" + new String(Base64.encode(secretKey.getEncoded()))  + "___" + new String(Base64.encode(iv));
-							System.out.println("IM HERE");
+							String response = "!ok___" + splitted[2] + "___" + new String(Base64.encode(challenge))
+									+ "___" + new String(Base64.encode(secretKey.getEncoded())) + "___"
+									+ new String(Base64.encode(iv));
+							//System.out.println("IM HERE");
 							String fileDir = config.getString("keys.dir") + "/" + splitted[1] + ".pub.pem";
 							cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(fileDir)));
 							writerRSA = new RSAwriter(myPrintWriterRSA, cipherRSApublic);
@@ -139,27 +144,26 @@ public class ClientHandler implements Runnable {
 
 						if (aut) {
 							// client requests
-							if(command.equals("login")) {
+							if (command.equals("login")) {
 
-								if(parts.length != 3) {
+								if (parts.length != 3) {
 									response = "login_invalid parameters";
 								} else {
 									response = users.login(parts[1], parts[2]);
-									if(response.startsWith("Success"))
+									if (response.startsWith("Success"))
 										this.username = parts[1];
 									response = "login_" + response;
 								}
 
-							}
-							else if(command.equals("logout")) {
+							} else if (command.equals("logout")) {
 
-								if(parts.length != 1) {
+								if (parts.length != 1) {
 									response = "logout invalid parameters";
-								} else if(username == null) {
+								} else if (username == null) {
 									response = "logout User must be logged in.";
 								} else {
 									response = users.logout(username);
-									if(response.startsWith("Success"))
+									if (response.startsWith("Success"))
 										this.username = null;
 									response = "logout_" + response;
 									aut = false;
@@ -167,55 +171,55 @@ public class ClientHandler implements Runnable {
 									readAES = false;
 								}
 
-							}
-							else if(command.equals("send")) {
+							} else if (command.equals("send")) {
 
-								if(parts.length != 2) {
+								if (parts.length != 2) {
 									response = "send_invalid parameters";
-								} else if(username == null) {
+								} else if (username == null) {
 									response = "send_User must be logged in.";
 								} else {
-									TcpListener.sendMessageToClients(username + "___" +parts[1]);
-									TcpListener.sendMessageToClients(username + "___" +parts[1]);
+									TcpListener.sendMessageToClients(username + "___" + parts[1]);
+									TcpListener.sendMessageToClients(username + "___" + parts[1]);
 									response = "send_Message was successfully send.";
 								}
 
-							}
-							else if(command.equals("register")) {
+							} else if (command.equals("register")) {
 
-								if(parts.length != 2) {
+								if (parts.length != 2) {
 									response = "register_invalid parameters";
-								} else if(username == null) {
+								} else if (username == null) {
 									response = "register_User must be logged in.";
 								} else {
-									//response = "register_" + users.registerPort(username, parts[1]);
-									
+									// response = "register_" +
+									// users.registerPort(username, parts[1]);
+
 									try {
 										nameserver.registerUser(username, parts[1]);
-										response = "register_Successfully registerd address for " + username;	
+										response = "register_Successfully registerd address for " + username;
 									} catch (AlreadyRegisteredException e) {
-										response = "register_" + username + "alredy registerd";	
+										response = "register_" + username + "alredy registerd";
 									}
-														
+
 								}
 
-							}
-							else if(command.equals("lookup")) {
+							} else if (command.equals("lookup")) {
 
-								if(parts.length != 2) {
+								if (parts.length != 2) {
 									response = "lookup_invalid parameters";
-								} else if(username == null) {
+								} else if (username == null) {
 									response = "lookup_User must be logged in.";
 								} else {
-									//response = "lookup_" + users.lookUpPort(parts[1]);
-									
+									// response = "lookup_" +
+									// users.lookUpPort(parts[1]);
+
 									String[] domain = parts[1].split("\\.");
-									
-									INameserverForChatserver server = nameserver.getNameserver(domain[domain.length-1]);
-									for(int i = domain.length-2; i > 0; i--) {
+
+									INameserverForChatserver server = nameserver
+											.getNameserver(domain[domain.length - 1]);
+									for (int i = domain.length - 2; i > 0; i--) {
 										server = server.getNameserver(domain[i]);
 									}
-									
+
 									response = "lookup_" + server.lookup(domain[0]);
 								}
 							} else {
@@ -223,34 +227,35 @@ public class ClientHandler implements Runnable {
 							}
 						} else {
 							if (parts.length == 1) {
-								//System.out.println("Authenticate user");
+								// System.out.println("Authenticate user");
 								if (Arrays.equals(Base64.encode(challenge), request.getBytes())) {
 									response = users.login(usernameTemp);
-									//System.out.println(response);
-									if(response.startsWith("Succesfully")) {
+									// System.out.println(response);
+									if (response.startsWith("Succesfully")) {
 										this.username = usernameTemp;
 										response = "login_" + response;
 										aut = true;
-										//writerAES.println("Authentication successful");
+										// writerAES.println("Authentication
+										// successful");
 									} else {
-										//TODO error msg, feedback
+										// TODO error msg, feedback
 										System.out.println("Communication error 1");
 										this.socket.close();
 										connections.remove(id);
 									}
 								} else {
-									//TODO error msg
+									// TODO error msg
 									System.out.println("Communication error 2");
 									this.socket.close();
 									connections.remove(id);
 								}
 							} else {
-								//TODO error msg
+								// TODO error msg
 								System.out.println("Communication error 3");
 								this.socket.close();
 								connections.remove(id);
 							}
-						} 
+						}
 
 						System.out.println("TEST: " + response);
 						// print request0
@@ -274,7 +279,7 @@ public class ClientHandler implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		} catch(IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (NoSuchAlgorithmException e1) {
 			// TODO Auto-generated catch block
@@ -285,7 +290,8 @@ public class ClientHandler implements Runnable {
 					this.socket.close();
 					connections.remove(id);
 				}
-			} catch (IOException ex) { }
+			} catch (IOException ex) {
+			}
 		}
 
 	}
@@ -295,7 +301,7 @@ public class ClientHandler implements Runnable {
 	 */
 	public void sendMessage(String message) {
 
-//		if(!username.equals(message.split("___")[0])) {
+		// if(!username.equals(message.split("___")[0])) {
 		if (username != null) {
 			try {
 				writerAES.println("public_" + message);
@@ -314,19 +320,28 @@ public class ClientHandler implements Runnable {
 			}
 		}
 	}
+
 	public void close() {
-		users.logout(username);
+		if (username != null) {
+			users.logout(username);
+		}
 		try {
+			running = false;
+//			socket.getInputStream().close();
+//			socket.getOutputStream().close();
 			if (!this.socket.isClosed()) {
 				socket.close();
 			}
-			running = false;
 			myBufferedReaderRSA.close();
 			myPrintWriterRSA.close();
-			readerRSA.close();
-			writerRSA.close();
-			readerAES.close();
-			writerAES.close();
+			if (readerRSA != null)
+				readerRSA.close();
+			if (writerRSA != null)
+				writerRSA.close();
+			if (readerAES != null)
+				readerAES.close();
+			if (writerAES != null)
+				writerAES.close();
 			connections.remove(id);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

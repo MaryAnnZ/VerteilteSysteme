@@ -11,7 +11,7 @@ import javax.crypto.IllegalBlockSizeException;
 
 import channel.RSAreader;
 
-public class ServerResponseListenerRSA extends Thread{
+public class ServerResponseListenerRSA extends Thread {
 
 	private Client client;
 	private RSAreader responseReader;
@@ -24,25 +24,26 @@ public class ServerResponseListenerRSA extends Thread{
 	}
 
 	public void run() {
-		while (true) {
+		while (this.client.running) {
 			try {
-				if(true) {
-					String response;
-					while ((response = responseReader.readLine()) != null) {
-						//System.out.println(response);
-						String[] parts = response.split("___");
-						String command = parts[0];
+				String response;
+				while ((response = responseReader.readLine()) != null) {
+					// System.out.println(response);
+					String[] parts = response.split("___");
+					String command = parts[0];
 
-						switch (command) {
-						case "!ok":
-							responseMap.put("authenticate", response);
-							break;
-						default: break;
-						}
-						client.handleServerResponseAut();
-						//System.out.println(command + " - " + response.substring(parts[0].length() + 1));
+					switch (command) {
+					case "!ok":
+						responseMap.put("authenticate", response);
+						break;
+					default:
+						break;
 					}
+					client.handleServerResponseAut();
+					// System.out.println(command + " - " +
+					// response.substring(parts[0].length() + 1));
 				}
+
 			} catch (IOException | IllegalBlockSizeException | BadPaddingException e) {
 				// TODO
 			} catch (InvalidKeyException e) {
@@ -55,17 +56,16 @@ public class ServerResponseListenerRSA extends Thread{
 		}
 	}
 
-
 	public synchronized String getResponse(String command) {
 		String response = null;
-		if(responseMap.containsKey(command)) {
+		if (responseMap.containsKey(command)) {
 			response = responseMap.get(command);
 			responseMap.remove(command);
 		}
 
 		return response;
 	}
-	
+
 	public void close() {
 		try {
 			responseReader.close();

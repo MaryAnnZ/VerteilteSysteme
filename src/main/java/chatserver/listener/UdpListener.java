@@ -51,7 +51,7 @@ public class UdpListener extends Thread {
 		} finally {
 			if (datagramSocket != null && !datagramSocket.isClosed())
 				datagramSocket.close();
-			threadPool.shutdown();
+			threadPool.shutdownNow();
 		}
 
 	}

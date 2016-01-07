@@ -28,32 +28,33 @@ public class TcpListener extends Thread {
 	private ServerSocket serverSocket;
 	private UserMap users;
 	private INameserver nameserver;
-	
+
 	private final ExecutorService threadPool;
 	private Config config;
-	
+
 	private int id;
 	private static ConcurrentHashMap<Integer, ClientHandler> connections;
-	
-	private boolean stopped = false;
-	
+
+	public boolean stopped = false;
+
 	private Cipher cipherRSApublic;
 	private Cipher cipherRSAprivate;
 
-	public TcpListener(ServerSocket serverSocket, UserMap users, INameserver nameserver, ExecutorService threadPool, Config config, Cipher cipherRSApublic, Cipher cipherRSAprivate) {
+	public TcpListener(ServerSocket serverSocket, UserMap users, INameserver nameserver, ExecutorService threadPool,
+			Config config, Cipher cipherRSApublic, Cipher cipherRSAprivate) {
 		this.serverSocket = serverSocket;
 		this.users = users;
 		this.nameserver = nameserver;
 		this.threadPool = threadPool;
 		this.connections = new ConcurrentHashMap<Integer, ClientHandler>();
-		
+
 		this.config = config;
 		this.cipherRSApublic = cipherRSApublic;
 		this.cipherRSAprivate = cipherRSAprivate;
-		
+
 		id = 0;
 	}
-	
+
 	public void run() {
 		while (!stopped) {
 			try {
@@ -80,6 +81,10 @@ public class TcpListener extends Thread {
 		if (stopped) {
 			try {
 				serverSocket.close();
+				for(ClientHandler ch : connections.values()){
+					if(ch!=null)
+						ch.close();
+				}
 				connections.clear();
 			} catch (IOException e) {
 				// Ignored because we cannot handle it
@@ -87,7 +92,7 @@ public class TcpListener extends Thread {
 			threadPool.shutdownNow();
 		}
 	}
-	
+
 	/**
 	 * sends public message to all clients
 	 */

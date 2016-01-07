@@ -83,6 +83,8 @@ public class Client implements IClientCli, Runnable {
 	private PrintWriter myPrintWriterRSA;
 
 	private boolean loggedInYet = false;
+	
+	public boolean running = true;
 
 	/**
 	 * @param componentName
@@ -343,11 +345,16 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	@Command
 	public String exit() throws IOException {
-		logout();
-		if (socket != null)
-			socket.close();
-		if (threadPool != null)
-			threadPool.shutdown();
+		running = false;
+		try{
+			logout();
+		} catch(NullPointerException e){
+			;
+		}
+		if (rsaListener != null)
+			rsaListener.close();
+		if (aesListener != null)
+			aesListener.close();
 		if (writerAES != null)
 			writerAES.close();
 		if (readerAES != null)
@@ -356,14 +363,14 @@ public class Client implements IClientCli, Runnable {
 			writerRSA.close();
 		if (readerRSA != null)
 			readerRSA.close();
-		if (rsaListener != null)
-			rsaListener.close();
-		if (aesListener != null)
-			aesListener.close();
 		if (myBufferedReaderRSA != null)
 			myBufferedReaderRSA.close();
 		if (myPrintWriterRSA != null)
 			myPrintWriterRSA.close();
+		if (socket != null)
+			socket.close();
+		if (threadPool != null)
+			threadPool.shutdownNow();
 		return "shutdown client";
 	}
 
@@ -381,7 +388,7 @@ public class Client implements IClientCli, Runnable {
 	}
 
 	private String getServerResponse(String command) {
-		try { Thread.sleep(500); } 
+		try { Thread.sleep(100); } 
 		catch (InterruptedException ex) { }
 
 		return aesListener.getResponse(command);
@@ -476,7 +483,7 @@ public class Client implements IClientCli, Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return "waiting for response";
+		return null;
 	}
 
 }

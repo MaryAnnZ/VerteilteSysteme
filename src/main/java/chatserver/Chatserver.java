@@ -46,6 +46,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 	private ServerSocket serverSocket;
 	private DatagramSocket datagramSocket;
 	private final ExecutorService threadPool;
+	private TcpListener tcpl;
 	
 	private Shell shell;
 	
@@ -144,7 +145,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 		}
 		
 		// start threads
-		threadPool.execute(new TcpListener(serverSocket, users, nameserver, threadPool, config, cipherRSApublic, cipherRSAprivate));
+		threadPool.execute((tcpl= new TcpListener(serverSocket, users, nameserver, threadPool, config, cipherRSApublic, cipherRSAprivate)));
 		threadPool.execute(new UdpListener(datagramSocket, users, threadPool));
 		
 		threadPool.execute(new Thread(shell));
@@ -159,11 +160,12 @@ public class Chatserver implements IChatserverCli, Runnable {
 	@Override
 	@Command
 	public String exit() throws IOException {
+		tcpl.stopped = true;
 		serverSocket.close();
 		datagramSocket.close();
-		userRequestStream.close();
-		userResponseStream.close();
-		threadPool.shutdown();
+//		userRequestStream.close();
+//		userResponseStream.close();
+		threadPool.shutdownNow();
 		
 		return "shutdown " + componentName;
 	}
