@@ -29,9 +29,9 @@ public class ServerResponseListenerAES extends Thread{
 				//if(responseReader.ready()) {
 				if (true) {
 					String response = responseReader.readLine();
-					String[] parts = response.split(" ");
+					String[] parts = response.split("_");
 					String command = parts[0];
-					
+					System.out.println("RESPONSE: " + response);
 					switch (command) {
 					
 						case "login":

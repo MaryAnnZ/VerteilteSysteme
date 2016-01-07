@@ -130,11 +130,17 @@ public class Nameserver implements INameserverCli, INameserver, Runnable {
             if (parts.length == 1) {
                 throw new AlreadyRegisteredException(domain + " has already been registered");
             } else {
-                String[] subDomainParts = new String[parts.length - 2];
+                String[] subDomainParts = new String[parts.length - 1];
                 for (int i = 0; i < subDomainParts.length; i++) {
                     subDomainParts[i] = parts[i];
                 }
-                String subDomain = String.join(".", subDomainParts);
+//                System.out.println("ERROR: " + subDomainParts.length);
+//                String subDomain = String.join(".", subDomainParts);]
+                StringBuilder strb = new StringBuilder(subDomainParts[0]);
+                for(int i = 1 ; i < subDomainParts.length; i++) {
+                	strb.append("."+subDomainParts[i]);
+                }
+                String subDomain = strb.toString();
                 this.print("Registering nameserver for domain " + domain, true);
                 subdomains.get(parts[parts.length - 1]).registerNameserver(subDomain, nameserver, nameserverForChatserver);
             }
@@ -155,7 +161,12 @@ public class Nameserver implements INameserverCli, INameserver, Runnable {
                 subDomainParts[i] = parts[i];
                 this.print("-------------" + i + "", true);
             }
-            String subDomain = String.join(".", subDomainParts);
+//            String subDomain = String.join(".", subDomainParts);
+            StringBuilder strb = new StringBuilder(subDomainParts[0]);
+            for(int i = 1 ; i < subDomainParts.length; i++) {
+            	strb.append("."+subDomainParts[i]);
+            }
+            String subDomain = strb.toString();
             this.print("Forwarding registering of " + username + " to " + parts[parts.length - 1], true);
             subdomains.get(parts[parts.length - 1]).registerUser(subDomain, address);
         } else if (parts.length == 1) {

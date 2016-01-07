@@ -233,6 +233,7 @@ public class Client implements IClientCli, Runnable {
 	public String msg(String username, String message) throws IOException {
 
 		String lookup = lookup(username);		
+		System.out.println("LOOKU1P: " + lookup);
 		String[] parts = lookup.split(":");
 
 		try{  Integer.parseInt(parts[1]); }
@@ -292,7 +293,10 @@ public class Client implements IClientCli, Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			return getServerResponse("lookup");
+			String lookup = getServerResponse("lookup");
+			System.out.println("LOOKU2P: " + lookup);
+			//return getServerResponse("lookup");
+			return lookup;
 		}
 		return "no AES channel";
 	}
@@ -377,7 +381,7 @@ public class Client implements IClientCli, Runnable {
 	}
 
 	private String getServerResponse(String command) {
-		try { Thread.sleep(100); } 
+		try { Thread.sleep(500); } 
 		catch (InterruptedException ex) { }
 
 		return aesListener.getResponse(command);

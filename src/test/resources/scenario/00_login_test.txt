@@ -1,3 +1,4 @@
+* 	Nameserver	nameserver
 *	Chatserver	chatserver
 *	Client		alice.vienna.at
 

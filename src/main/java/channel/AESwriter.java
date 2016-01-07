@@ -28,6 +28,7 @@ public class AESwriter {
 	}
 	
 	public synchronized void println(String msg) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+		System.out.println("Msg to send AES: " + msg);
 		cipherAES.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
 		byte[] aesMsg = cipherAES.doFinal(msg.getBytes());
 		byte[] base64msg = Base64.encode(aesMsg);

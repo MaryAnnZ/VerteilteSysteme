@@ -103,6 +103,7 @@ public class ClientHandler implements Runnable {
 			// read client requests
 			try {
 				while (running) {
+					System.out.println("AM I HERE?");
 					while (readRSA && ((request = readerRSA.readLine()) != null)) {
 						String[] splitted = request.split("___");
 						if (splitted.length != 3) {
@@ -111,7 +112,7 @@ public class ClientHandler implements Runnable {
 							connections.remove(id);
 						} else {
 							String response = "!ok___" + splitted[2] + "___" + new String(Base64.encode(challenge)) + "___" + new String(Base64.encode(secretKey.getEncoded()))  + "___" + new String(Base64.encode(iv));
-						
+							System.out.println("IM HERE");
 							String fileDir = config.getString("keys.dir") + "/" + splitted[1] + ".pub.pem";
 							cipherRSApublic.init(Cipher.ENCRYPT_MODE, Keys.readPublicPEM(new File(fileDir)));
 							writerRSA = new RSAwriter(myPrintWriterRSA, cipherRSApublic);
@@ -120,6 +121,7 @@ public class ClientHandler implements Runnable {
 							cipherAESdecode.init(Cipher.DECRYPT_MODE, secretKeySpec, ivSpec);
 							readerAES = new AESreader(myBufferedReaderRSA, cipherAESdecode, secretKeySpec, ivSpec);
 							writerAES = new AESwriter(myPrintWriterRSA, cipherAESencode, secretKey, ivSpec);
+							writerRSA.println(response);
 							writerRSA.println(response);
 							readRSA = false;
 							break;
@@ -140,12 +142,12 @@ public class ClientHandler implements Runnable {
 							if(command.equals("login")) {
 
 								if(parts.length != 3) {
-									response = "login invalid parameters";
+									response = "login_invalid parameters";
 								} else {
 									response = users.login(parts[1], parts[2]);
 									if(response.startsWith("Success"))
 										this.username = parts[1];
-									response = "login " + response;
+									response = "login_" + response;
 								}
 
 							}
@@ -159,7 +161,7 @@ public class ClientHandler implements Runnable {
 									response = users.logout(username);
 									if(response.startsWith("Success"))
 										this.username = null;
-									response = "Logging out " + response;
+									response = "logout_" + response;
 									aut = false;
 									readRSA = true;
 									readAES = false;
@@ -169,40 +171,45 @@ public class ClientHandler implements Runnable {
 							else if(command.equals("send")) {
 
 								if(parts.length != 2) {
-									response = "send invalid parameters";
+									response = "send_invalid parameters";
 								} else if(username == null) {
-									response = "send User must be logged in.";
+									response = "send_User must be logged in.";
 								} else {
 									TcpListener.sendMessageToClients(username + "___" +parts[1]);
 									TcpListener.sendMessageToClients(username + "___" +parts[1]);
-									response = "send Message was successfully send.";
+									response = "send_Message was successfully send.";
 								}
 
 							}
 							else if(command.equals("register")) {
 
 								if(parts.length != 2) {
-									response = "register invalid parameters";
+									response = "register_invalid parameters";
 								} else if(username == null) {
-									response = "register User must be logged in.";
+									response = "register_User must be logged in.";
 								} else {
 									//response = "register_" + users.registerPort(username, parts[1]);
 									
-									nameserver.registerUser(username, parts[1]);
-									response = "register_Successfully registerd address for " + username;						
+									try {
+										nameserver.registerUser(username, parts[1]);
+										response = "register_Successfully registerd address for " + username;	
+									} catch (AlreadyRegisteredException e) {
+										response = "register_" + username + "alredy registerd";	
+									}
+														
 								}
 
 							}
 							else if(command.equals("lookup")) {
 
 								if(parts.length != 2) {
-									response = "lookup invalid parameters";
+									response = "lookup_invalid parameters";
 								} else if(username == null) {
-									response = "lookup User must be logged in.";
+									response = "lookup_User must be logged in.";
 								} else {
 									//response = "lookup_" + users.lookUpPort(parts[1]);
 									
-									String[] domain = parts[1].split(".");
+									String[] domain = parts[1].split("\\.");
 									
 									INameserverForChatserver server = nameserver.getNameserver(domain[domain.length-1]);
 									for(int i = domain.length-2; i > 0; i--) {
@@ -216,15 +223,15 @@ public class ClientHandler implements Runnable {
 							}
 						} else {
 							if (parts.length == 1) {
-								System.out.println("Authenticate user");
+								//System.out.println("Authenticate user");
 								if (Arrays.equals(Base64.encode(challenge), request.getBytes())) {
 									response = users.login(usernameTemp);
-									System.out.println(response);
+									//System.out.println(response);
 									if(response.startsWith("Succesfully")) {
 										this.username = usernameTemp;
-										response = "login " + response;
+										response = "login_" + response;
 										aut = true;
-										writerAES.println("Authentication successful");
+										//writerAES.println("Authentication successful");
 									} else {
 										//TODO error msg, feedback
 										System.out.println("Communication error 1");
@@ -245,7 +252,9 @@ public class ClientHandler implements Runnable {
 							}
 						} 
 
-						// print request
+						System.out.println("TEST: " + response);
+						// print request0
+						writerAES.println(response);
 						writerAES.println(response);
 					}
 				}
@@ -259,9 +268,6 @@ public class ClientHandler implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (InvalidAlgorithmParameterException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (AlreadyRegisteredException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (InvalidDomainException e) {
@@ -292,7 +298,7 @@ public class ClientHandler implements Runnable {
 //		if(!username.equals(message.split("___")[0])) {
 		if (username != null) {
 			try {
-				writerAES.println("public " + message);
+				writerAES.println("public_" + message);
 			} catch (IllegalBlockSizeException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
